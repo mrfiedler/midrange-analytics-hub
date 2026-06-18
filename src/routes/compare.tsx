@@ -34,7 +34,8 @@ function ComparePage() {
     if (slots.length >= 4) return;
     setShowPicker(false);
     setSlots((s) => [...s, { id, name, averages: null }]);
-    const res = await profile({ data: { id, season: 2024 } });
+    const season = getCurrentSeason();
+    const res = await profile({ data: { id, season } });
     setSlots((s) => s.map((slot) => (slot.id === id ? { ...slot, averages: res?.averages ?? null } : slot)));
   };
 
