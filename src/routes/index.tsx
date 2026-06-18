@@ -54,6 +54,11 @@ function Dashboard() {
         </div>
       </section>
 
+      {/* Champion banner */}
+      <ChampionBanner />
+
+
+
       {/* Daily Leaders */}
       <section>
         <SectionHeader title="Líderes da rodada" eyebrow="Em alta" />
