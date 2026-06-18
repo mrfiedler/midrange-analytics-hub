@@ -21,11 +21,14 @@ export const Route = createFileRoute("/players/$id")({
   component: PlayerProfile,
 });
 
-const SEASONS = [2024, 2023, 2022, 2021, 2020] as const;
+import { getCurrentSeason } from "@/lib/season";
+
+const CURRENT = getCurrentSeason();
+const SEASONS = [CURRENT, CURRENT - 1, CURRENT - 2, CURRENT - 3, CURRENT - 4] as const;
 
 function PlayerProfile() {
   const { id } = useParams({ from: "/players/$id" });
-  const [season, setSeason] = useState<number>(2024);
+  const [season, setSeason] = useState<number>(CURRENT);
   const { mode } = useMode();
   const fetchProfile = useServerFn(getPlayerProfile);
 
