@@ -7,6 +7,7 @@ import { searchPlayers, getPlayerProfile } from "@/lib/balldontlie.functions";
 import { PlayerRadar } from "@/components/charts/PlayerRadar";
 import { MetricTooltip } from "@/components/MetricTooltip";
 import { scoreMetric } from "@/lib/score-metric";
+import { getCurrentSeason } from "@/lib/season";
 
 export const Route = createFileRoute("/compare")({
   head: () => ({
