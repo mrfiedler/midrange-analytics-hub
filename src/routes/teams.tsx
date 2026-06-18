@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { TEAMS } from "@/data/teams";
+import { teamLogoUrl } from "@/lib/nba-logos";
 import { useState } from "react";
 
 export const Route = createFileRoute("/teams")({
@@ -14,8 +15,9 @@ export const Route = createFileRoute("/teams")({
 
 function TeamsList() {
   const [conf, setConf] = useState<"all" | "East" | "West">("all");
-  const teams = TEAMS.filter((t) => conf === "all" || t.conference === conf)
-    .sort((a, b) => b.ortg - b.drtg - (a.ortg - a.drtg) === 0 ? 0 : (b.ortg - b.drtg) - (a.ortg - a.drtg));
+  const teams = [...TEAMS]
+    .filter((t) => conf === "all" || t.conference === conf)
+    .sort((a, b) => (b.ortg - b.drtg) - (a.ortg - a.drtg));
 
   return (
     <div className="space-y-6 fade-up">
@@ -37,15 +39,28 @@ function TeamsList() {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {teams.map((t) => {
           const net = t.ortg - t.drtg;
+          const logo = teamLogoUrl(t.abbr);
           return (
             <Link
               key={t.id}
               to="/teams/$id"
               params={{ id: String(t.id) }}
-              className="mrf-card mrf-card-hover p-4 flex items-center gap-4"
+              className="mrf-card mrf-card-hover p-4 flex items-center gap-4 group"
             >
-              <div className="size-14 rounded-lg court-bg grid place-items-center font-display text-xl text-white shrink-0">
-                {t.abbr}
+              <div className="size-16 grid place-items-center shrink-0">
+                {logo ? (
+                  <img
+                    src={logo}
+                    alt={`${t.city} ${t.name}`}
+                    loading="lazy"
+                    className="size-full object-contain transition-all duration-300"
+                    style={{ filter: "grayscale(100%) brightness(1.8)" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.filter = "none")}
+                    onMouseLeave={(e) => (e.currentTarget.style.filter = "grayscale(100%) brightness(1.8)")}
+                  />
+                ) : (
+                  <div className="size-14 rounded-lg court-bg grid place-items-center font-display text-xl text-white">{t.abbr}</div>
+                )}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="font-display text-lg leading-tight">{t.city} {t.name}</div>
