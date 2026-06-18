@@ -72,7 +72,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { name: "theme-color", content: "#0D0D0D" },
+      { name: "theme-color", content: "#0A1628" },
       { title: "Midrange Frenzy — análise avançada de basquete NBA" },
       { name: "description", content: "Plataforma de análise de basquete: jogadores, times, composições históricas, comparador e glossário didático de métricas avançadas." },
       { property: "og:title", content: "Midrange Frenzy — análise avançada de basquete NBA" },
