@@ -17,7 +17,6 @@ export const Route = createFileRoute("/players")({
 
 function PlayersSearch() {
   const [q, setQ] = useState("");
-  const navigate = useNavigate();
   const search = useServerFn(searchPlayers);
 
   const mutation = useMutation({
