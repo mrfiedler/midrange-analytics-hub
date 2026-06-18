@@ -142,3 +142,76 @@ export const getPlayerProfile = createServerFn({ method: "GET" })
       return { ok: false as const, error: (err as Error).message, season: data.season ?? 2024, player: null, averages: null };
     }
   });
+
+/* ---------- Team roster ---------- */
+
+const RosterInput = z.object({
+  teamId: z.number().int().positive(),
+  season: z.number().int().min(1979).max(2100).optional(),
+});
+
+export const getTeamRoster = createServerFn({ method: "GET" })
+  .inputValidator((d) => RosterInput.parse(d))
+  .handler(async ({ data }) => {
+    try {
+      const params: Record<string, string | number> = { "team_ids[]": data.teamId, per_page: 30 };
+      if (data.season) params.seasons = data.season;
+      const res = await bdl<{
+        data: Array<{
+          id: number;
+          first_name: string;
+          last_name: string;
+          position: string | null;
+          height: string | null;
+          weight: string | null;
+          jersey_number: string | null;
+          team: { id: number; abbreviation: string; full_name: string } | null;
+        }>;
+      }>(`/players`, params);
+      return {
+        ok: true as const,
+        players: res.data.map((p) => ({
+          id: p.id,
+          fullName: `${p.first_name} ${p.last_name}`.trim(),
+          position: p.position || "—",
+          height: p.height,
+          jersey: p.jersey_number,
+        })),
+      };
+    } catch (err) {
+      console.error("getTeamRoster", err);
+      return { ok: false as const, players: [], error: (err as Error).message };
+    }
+  });
+
+/* ---------- Bulk season averages ---------- */
+
+const BulkAvgInput = z.object({
+  season: z.number().int().min(1979).max(2100),
+  playerIds: z.array(z.number().int().positive()).min(1).max(25),
+});
+
+export const getSeasonAveragesBulk = createServerFn({ method: "GET" })
+  .inputValidator((d) => BulkAvgInput.parse(d))
+  .handler(async ({ data }) => {
+    try {
+      const params: Record<string, string | number> = { season: data.season };
+      data.playerIds.forEach((id, i) => {
+        (params as any)[`player_ids[${i}]`] = id;
+      });
+      // balldontlie expects repeated player_ids[] — replicate via URLSearchParams
+      const url = new URL(`${BASE}/season_averages`);
+      url.searchParams.set("season", String(data.season));
+      data.playerIds.forEach((id) => url.searchParams.append("player_ids[]", String(id)));
+      const apiKey = process.env.BALLDONTLIE_API_KEY;
+      if (!apiKey) throw new Error("BALLDONTLIE_API_KEY missing");
+      const res = await fetch(url.toString(), { headers: { Authorization: apiKey } });
+      if (!res.ok) throw new Error(`balldontlie ${res.status}`);
+      const json = (await res.json()) as { data: any[] };
+      return { ok: true as const, averages: json.data };
+    } catch (err) {
+      console.error("getSeasonAveragesBulk", err);
+      return { ok: false as const, averages: [] as any[], error: (err as Error).message };
+    }
+  });
+

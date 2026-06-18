@@ -2,8 +2,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
-import { Search, Loader2, UserRound } from "lucide-react";
+import { Search, Loader2 } from "lucide-react";
 import { searchPlayers } from "@/lib/balldontlie.functions";
+import { PlayerAvatar } from "@/components/players/PlayerAvatar";
 
 export const Route = createFileRoute("/players")({
   head: () => ({
@@ -26,13 +27,14 @@ function PlayersSearch() {
   useEffect(() => {
     const q2 = q.trim();
     if (q2.length < 2) return;
-    const t = setTimeout(() => mutation.mutate(q2), 280);
+    const t = setTimeout(() => mutation.mutate(q2), 400);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q]);
 
   const results = mutation.data?.players ?? [];
   const apiOk = mutation.data?.ok ?? true;
+  const isLoading = mutation.isPending;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 fade-up">
@@ -51,7 +53,7 @@ function PlayersSearch() {
           placeholder="Buscar jogador da NBA…"
           className="flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
         />
-        {mutation.isPending && <Loader2 className="size-4 animate-spin text-flame" />}
+        {isLoading && <Loader2 className="size-4 animate-spin text-flame" />}
       </div>
 
       {!apiOk && mutation.data && (
@@ -60,35 +62,49 @@ function PlayersSearch() {
         </div>
       )}
 
-      {q.trim().length >= 2 && results.length === 0 && !mutation.isPending && (
+      {q.trim().length >= 2 && isLoading && (
+        <ul className="grid gap-2 sm:grid-cols-2">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <li key={i} className="mrf-card p-3 flex items-center gap-3 animate-pulse">
+              <div className="size-10 rounded-full bg-surface-2" />
+              <div className="flex-1 space-y-2">
+                <div className="h-3 w-32 rounded bg-surface-2" />
+                <div className="h-2 w-20 rounded bg-surface-2" />
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {q.trim().length >= 2 && results.length === 0 && !isLoading && (
         <div className="mrf-card p-6 text-center text-muted-foreground">
           Nenhum jogador encontrado para "<span className="text-foreground">{q}</span>".
         </div>
       )}
 
-      <ul className="grid gap-2 sm:grid-cols-2">
-        {results.map((p) => (
-          <li key={p.id}>
-            <Link
-              to="/players/$id"
-              params={{ id: String(p.id) }}
-              className="mrf-card mrf-card-hover flex items-center gap-3 p-3"
-            >
-              <div className="size-10 rounded-full bg-surface-2 grid place-items-center text-muted-foreground">
-                <UserRound className="size-5" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="font-medium truncate">{p.fullName}</div>
-                <div className="text-xs text-muted-foreground truncate">
-                  {p.position && p.position !== "—" ? p.position : "—"}
-                  {p.team && ` · ${p.team.abbr} ${p.team.name}`}
+      {!isLoading && (
+        <ul className="grid gap-2 sm:grid-cols-2">
+          {results.map((p) => (
+            <li key={p.id}>
+              <Link
+                to="/players/$id"
+                params={{ id: String(p.id) }}
+                className="mrf-card mrf-card-hover flex items-center gap-3 p-3"
+              >
+                <PlayerAvatar id={p.id} firstName={p.firstName} lastName={p.lastName} />
+                <div className="min-w-0 flex-1">
+                  <div className="font-medium truncate">{p.fullName}</div>
+                  <div className="text-xs text-muted-foreground truncate">
+                    {p.position && p.position !== "—" ? p.position : "—"}
+                    {p.team && ` · ${p.team.abbr} ${p.team.name}`}
+                  </div>
                 </div>
-              </div>
-              {p.jersey && <span className="font-display text-amber text-lg">#{p.jersey}</span>}
-            </Link>
-          </li>
-        ))}
-      </ul>
+                {p.jersey && <span className="font-display text-amber text-lg">#{p.jersey}</span>}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
 
       {q.trim().length < 2 && (
         <div className="mrf-card p-6">

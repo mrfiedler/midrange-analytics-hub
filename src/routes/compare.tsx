@@ -7,6 +7,7 @@ import { searchPlayers, getPlayerProfile } from "@/lib/balldontlie.functions";
 import { PlayerRadar } from "@/components/charts/PlayerRadar";
 import { MetricTooltip } from "@/components/MetricTooltip";
 import { scoreMetric } from "@/lib/score-metric";
+import { getCurrentSeason } from "@/lib/season";
 
 export const Route = createFileRoute("/compare")({
   head: () => ({
@@ -33,7 +34,8 @@ function ComparePage() {
     if (slots.length >= 4) return;
     setShowPicker(false);
     setSlots((s) => [...s, { id, name, averages: null }]);
-    const res = await profile({ data: { id, season: 2024 } });
+    const season = getCurrentSeason();
+    const res = await profile({ data: { id, season } });
     setSlots((s) => s.map((slot) => (slot.id === id ? { ...slot, averages: res?.averages ?? null } : slot)));
   };
 

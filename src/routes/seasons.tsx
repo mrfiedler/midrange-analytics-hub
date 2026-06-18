@@ -11,12 +11,16 @@ export const Route = createFileRoute("/seasons")({
 });
 
 const SEASONS = [
-  { year: "2023–24", champion: "Boston Celtics",     mvp: "Nikola Jokić",            scoringLeader: "Luka Dončić (33.9)" },
-  { year: "2022–23", champion: "Denver Nuggets",     mvp: "Joel Embiid",             scoringLeader: "Joel Embiid (33.1)" },
-  { year: "2021–22", champion: "Golden State Warriors", mvp: "Nikola Jokić",         scoringLeader: "Joel Embiid (30.6)" },
-  { year: "2020–21", champion: "Milwaukee Bucks",    mvp: "Nikola Jokić",            scoringLeader: "Stephen Curry (32.0)" },
-  { year: "2019–20", champion: "Los Angeles Lakers", mvp: "Giannis Antetokounmpo",   scoringLeader: "James Harden (34.3)" },
-  { year: "2018–19", champion: "Toronto Raptors",    mvp: "Giannis Antetokounmpo",   scoringLeader: "James Harden (36.1)" },
+  { year: "2025–26", champion: "New York Knicks",     mvp: "Nikola Jokić",            scoringLeader: "Jalen Brunson (28.6)" },
+  { year: "2024–25", champion: "Oklahoma City Thunder", mvp: "Shai Gilgeous-Alexander", scoringLeader: "Shai Gilgeous-Alexander (32.7)" },
+  { year: "2023–24", champion: "Boston Celtics",      mvp: "Nikola Jokić",            scoringLeader: "Luka Dončić (33.9)" },
+  { year: "2022–23", champion: "Denver Nuggets",      mvp: "Joel Embiid",             scoringLeader: "Joel Embiid (33.1)" },
+  { year: "2021–22", champion: "Golden State Warriors", mvp: "Nikola Jokić",          scoringLeader: "Joel Embiid (30.6)" },
+  { year: "2020–21", champion: "Milwaukee Bucks",     mvp: "Nikola Jokić",            scoringLeader: "Stephen Curry (32.0)" },
+  { year: "2019–20", champion: "Los Angeles Lakers",  mvp: "Giannis Antetokounmpo",   scoringLeader: "James Harden (34.3)" },
+  { year: "2018–19", champion: "Toronto Raptors",     mvp: "Giannis Antetokounmpo",   scoringLeader: "James Harden (36.1)" },
+  { year: "2017–18", champion: "Golden State Warriors", mvp: "James Harden",          scoringLeader: "James Harden (30.4)" },
+  { year: "2016–17", champion: "Golden State Warriors", mvp: "Russell Westbrook",     scoringLeader: "Russell Westbrook (31.6)" },
 ];
 
 function SeasonsPage() {
@@ -25,17 +29,17 @@ function SeasonsPage() {
       <header>
         <div className="eyebrow">Histórico</div>
         <h1 className="font-display text-4xl md:text-5xl">Temporadas</h1>
-        <p className="text-muted-foreground mt-2 max-w-xl">Campeões, MVPs e líderes em pontuação das últimas temporadas. Em breve: filtros e estatísticas completas.</p>
+        <p className="text-muted-foreground mt-2 max-w-xl">Campeões, MVPs e líderes em pontuação das últimas temporadas.</p>
       </header>
 
-      <div className="mrf-card overflow-hidden">
+      <div className="mrf-card overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-surface-2 text-left">
             <tr className="text-[11px] font-display uppercase tracking-widest text-muted-foreground">
               <th className="px-4 py-3">Temporada</th>
               <th className="px-4 py-3">Campeão</th>
               <th className="px-4 py-3">MVP</th>
-              <th className="px-4 py-3 hidden sm:table-cell">Cestinha</th>
+              <th className="px-4 py-3">Líder em Pontos</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-hairline">
@@ -44,7 +48,7 @@ function SeasonsPage() {
                 <td className="px-4 py-3 font-display text-flame">{s.year}</td>
                 <td className="px-4 py-3">{s.champion}</td>
                 <td className="px-4 py-3">{s.mvp}</td>
-                <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell">{s.scoringLeader}</td>
+                <td className="px-4 py-3 text-muted-foreground">{s.scoringLeader}</td>
               </tr>
             ))}
           </tbody>

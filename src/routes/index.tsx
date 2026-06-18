@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { Flame, Zap, ArrowRight, Trophy, Target, Activity, Shield as ShieldIcon } from "lucide-react";
+import { Flame, Zap, ArrowRight, Activity, Shield as ShieldIcon } from "lucide-react";
 import { TOP_PLAYERS, TODAY_LEADERS, RECENT_GAMES } from "@/data/featured";
 import { MetricTooltip } from "@/components/MetricTooltip";
+import { ChampionBanner } from "@/components/ChampionBanner";
 import { findMetric } from "@/data/glossary";
 
 export const Route = createFileRoute("/")({
@@ -52,6 +53,11 @@ function Dashboard() {
           </div>
         </div>
       </section>
+
+      {/* Champion banner */}
+      <ChampionBanner />
+
+
 
       {/* Daily Leaders */}
       <section>
