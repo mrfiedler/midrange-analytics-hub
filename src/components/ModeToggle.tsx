@@ -7,18 +7,17 @@ export function ModeToggle() {
   const isPro = mode === "pro";
 
   return (
-    <button
-      onClick={toggle}
+    <div
       className="group flex items-center gap-2.5 rounded-full border border-hairline bg-surface px-3 py-1.5 text-xs font-display uppercase tracking-widest transition-colors hover:border-flame/60"
       aria-label="Alternar modo Newbie / Pro"
     >
-      <span className={`flex items-center gap-1.5 transition-opacity ${isPro ? "opacity-40" : "opacity-100 text-amber"}`}>
+      <button onClick={toggle} className={`flex items-center gap-1.5 transition-opacity ${isPro ? "opacity-40" : "opacity-100 text-amber"}`}>
         <Sparkles className="size-3.5" /> Newbie
-      </span>
+      </button>
       <Switch checked={isPro} onCheckedChange={toggle} className="data-[state=checked]:bg-flame" />
-      <span className={`flex items-center gap-1.5 transition-opacity ${isPro ? "opacity-100 text-flame" : "opacity-40"}`}>
+      <button onClick={toggle} className={`flex items-center gap-1.5 transition-opacity ${isPro ? "opacity-100 text-flame" : "opacity-40"}`}>
         Pro <Brain className="size-3.5" />
-      </span>
-    </button>
+      </button>
+    </div>
   );
 }
