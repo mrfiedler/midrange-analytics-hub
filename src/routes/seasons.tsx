@@ -4,7 +4,7 @@ export const Route = createFileRoute("/seasons")({
   head: () => ({
     meta: [
       { title: "Temporadas & Histórico — Midrange Frenzy" },
-      { name: "description", content: "Linha do tempo de temporadas da NBA com campeões, MVPs e líderes estatísticos." },
+      { name: "description", content: "Linha do tempo de temporadas da NBA com campeões e líderes estatísticos." },
     ],
   }),
   component: SeasonsPage,
@@ -29,7 +29,7 @@ function SeasonsPage() {
       <header>
         <div className="eyebrow">Histórico</div>
         <h1 className="font-display text-4xl md:text-5xl">Temporadas</h1>
-        <p className="text-muted-foreground mt-2 max-w-xl">Campeões, MVPs e líderes em pontuação das últimas temporadas.</p>
+        <p className="text-muted-foreground mt-2 max-w-xl">Campeões e líderes em pontuação das últimas temporadas.</p>
       </header>
 
       <div className="mrf-card overflow-x-auto">
@@ -38,7 +38,6 @@ function SeasonsPage() {
             <tr className="text-[11px] font-display uppercase tracking-widest text-muted-foreground">
               <th className="px-4 py-3">Temporada</th>
               <th className="px-4 py-3">Campeão</th>
-              <th className="px-4 py-3">MVP</th>
               <th className="px-4 py-3">Líder em Pontos</th>
             </tr>
           </thead>
@@ -47,7 +46,6 @@ function SeasonsPage() {
               <tr key={s.year} className="hover:bg-surface-2/60">
                 <td className="px-4 py-3 font-display text-flame">{s.year}</td>
                 <td className="px-4 py-3">{s.champion}</td>
-                <td className="px-4 py-3">{s.mvp}</td>
                 <td className="px-4 py-3 text-muted-foreground">{s.scoringLeader}</td>
               </tr>
             ))}
