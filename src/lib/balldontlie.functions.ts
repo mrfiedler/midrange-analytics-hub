@@ -172,6 +172,8 @@ export const getTeamRoster = createServerFn({ method: "GET" })
         ok: true as const,
         players: res.data.map((p) => ({
           id: p.id,
+          firstName: p.first_name,
+          lastName: p.last_name,
           fullName: `${p.first_name} ${p.last_name}`.trim(),
           position: p.position || "—",
           height: p.height,

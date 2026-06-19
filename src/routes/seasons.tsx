@@ -64,7 +64,7 @@ function SeasonsPage() {
                 <tr key={c.season} className="hover:bg-surface-2/60">
                   <td className="px-4 py-3 font-display text-flame">{c.season}–{(c.season + 1).toString().slice(2)}</td>
                   <td className="px-4 py-3">{c.team}</td>
-                  <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{c.finalsMvp ?? "—"}</td>
+                  <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{c.finalsMVP ?? "—"}</td>
                 </tr>
               ))}
             </tbody>
