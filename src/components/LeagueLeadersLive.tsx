@@ -42,7 +42,8 @@ export function LeagueLeadersLive() {
         },
       });
       if (!res.ok || !res.data?.resultSet) {
-        return { source: null as const, available: false, data: null as LeaderRow[] | null };
+        const empty: LeaderRow[] | null = null;
+        return { source: null as null | "nba.com", available: false, data: empty };
       }
       const { headers, rowSet } = res.data.resultSet;
       const idx = (k: string) => headers.indexOf(k);
