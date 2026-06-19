@@ -10,6 +10,7 @@ import { useMode } from "@/lib/mode-context";
 import { PlayerRadar } from "@/components/charts/PlayerRadar";
 import { EvolutionChart } from "@/components/charts/EvolutionChart";
 import { scoreMetric } from "@/lib/score-metric";
+import { PlayerAvatar } from "@/components/players/PlayerAvatar";
 
 export const Route = createFileRoute("/players/$id")({
   head: ({ params }) => ({
@@ -91,9 +92,7 @@ function PlayerProfile() {
         <div className="absolute -right-12 -top-12 size-72 rounded-full bg-flame/10 blur-3xl pointer-events-none" />
         <div className="absolute -left-20 bottom-0 size-56 rounded-full bg-accent/15 blur-3xl pointer-events-none" />
         <div className="relative flex flex-col md:flex-row md:items-end gap-6">
-          <div className="size-28 rounded-2xl flame-bg grid place-items-center font-display text-5xl text-white shrink-0 shadow-lg">
-            {player.firstName[0]}{player.lastName[0]}
-          </div>
+          <PlayerAvatar firstName={player.firstName} lastName={player.lastName} size="xl" />
           <div className="flex-1 min-w-0">
             <div className="eyebrow text-flame">{player.team?.abbr ?? "Free agent"} · {player.position}</div>
             <h1 className="font-display text-4xl md:text-6xl leading-none mt-1">{player.fullName}</h1>
