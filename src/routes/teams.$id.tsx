@@ -10,6 +10,7 @@ import { getTeamRoster } from "@/lib/balldontlie.functions";
 import { getCurrentSeason } from "@/lib/season";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Cell } from "recharts";
+import { PlayerAvatar } from "@/components/players/PlayerAvatar";
 
 export const Route = createFileRoute("/teams/$id")({
   head: ({ params }) => ({
@@ -149,7 +150,12 @@ function TeamDetail() {
                 {roster.map((p) => (
                   <tr key={p.id} className="hover:bg-surface-2/60">
                     <td className="px-4 py-3 text-amber font-display">{p.jersey ?? "—"}</td>
-                    <td className="px-4 py-3 font-medium">{p.fullName}</td>
+                    <td className="px-4 py-3 font-medium">
+                      <div className="flex items-center gap-3">
+                        <PlayerAvatar firstName={p.firstName} lastName={p.lastName} size="sm" />
+                        <span>{p.fullName}</span>
+                      </div>
+                    </td>
                     <td className="px-4 py-3 text-muted-foreground">{p.position}</td>
                     <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell">{p.height ?? "—"}</td>
                     <td className="px-4 py-3 text-right">

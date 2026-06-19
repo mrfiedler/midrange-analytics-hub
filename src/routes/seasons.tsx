@@ -1,60 +1,80 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { CHAMPIONS } from "@/data/champions";
 
 export const Route = createFileRoute("/seasons")({
   head: () => ({
     meta: [
       { title: "Temporadas & Histórico — Midrange Frenzy" },
-      { name: "description", content: "Linha do tempo de temporadas da NBA com campeões e líderes estatísticos." },
+      { name: "description", content: "Linha do tempo de temporadas da NBA com campeões e líderes estatísticos atualizados." },
     ],
   }),
   component: SeasonsPage,
 });
 
-const SEASONS = [
-  { year: "2025–26", champion: "New York Knicks",     mvp: "Nikola Jokić",            scoringLeader: "Jalen Brunson (28.6)" },
-  { year: "2024–25", champion: "Oklahoma City Thunder", mvp: "Shai Gilgeous-Alexander", scoringLeader: "Shai Gilgeous-Alexander (32.7)" },
-  { year: "2023–24", champion: "Boston Celtics",      mvp: "Nikola Jokić",            scoringLeader: "Luka Dončić (33.9)" },
-  { year: "2022–23", champion: "Denver Nuggets",      mvp: "Joel Embiid",             scoringLeader: "Joel Embiid (33.1)" },
-  { year: "2021–22", champion: "Golden State Warriors", mvp: "Nikola Jokić",          scoringLeader: "Joel Embiid (30.6)" },
-  { year: "2020–21", champion: "Milwaukee Bucks",     mvp: "Nikola Jokić",            scoringLeader: "Stephen Curry (32.0)" },
-  { year: "2019–20", champion: "Los Angeles Lakers",  mvp: "Giannis Antetokounmpo",   scoringLeader: "James Harden (34.3)" },
-  { year: "2018–19", champion: "Toronto Raptors",     mvp: "Giannis Antetokounmpo",   scoringLeader: "James Harden (36.1)" },
-  { year: "2017–18", champion: "Golden State Warriors", mvp: "James Harden",          scoringLeader: "James Harden (30.4)" },
-  { year: "2016–17", champion: "Golden State Warriors", mvp: "Russell Westbrook",     scoringLeader: "Russell Westbrook (31.6)" },
-];
-
 function SeasonsPage() {
   return (
-    <div className="space-y-6 fade-up">
+    <div className="space-y-8 fade-up">
       <header>
         <div className="eyebrow">Histórico</div>
         <h1 className="font-display text-4xl md:text-5xl">Temporadas</h1>
-        <p className="text-muted-foreground mt-2 max-w-xl">Campeões e líderes em pontuação das últimas temporadas.</p>
+        <p className="text-muted-foreground mt-2 max-w-xl">
+          Campeões por temporada e líderes estatísticos da temporada atual, atualizados automaticamente.
+        </p>
       </header>
 
-      <div className="mrf-card overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-surface-2 text-left">
-            <tr className="text-[11px] font-display uppercase tracking-widest text-muted-foreground">
-              <th className="px-4 py-3">Temporada</th>
-              <th className="px-4 py-3">Campeão</th>
-              <th className="px-4 py-3">Líder em Pontos</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-hairline">
-            {SEASONS.map((s) => (
-              <tr key={s.year} className="hover:bg-surface-2/60">
-                <td className="px-4 py-3 font-display text-flame">{s.year}</td>
-                <td className="px-4 py-3">{s.champion}</td>
-                <td className="px-4 py-3 text-muted-foreground">{s.scoringLeader}</td>
+      {/* Líderes via widget Proballers (sempre atualizado) */}
+      <section>
+        <div className="mb-3 flex items-end justify-between">
+          <div>
+            <div className="eyebrow text-flame">Temporada atual</div>
+            <h2 className="font-display text-2xl">Líderes da liga</h2>
+          </div>
+        </div>
+        <div className="mrf-card overflow-hidden">
+          <iframe
+            src="https://widgets.proballers.com/en/widget/league-leaders/nba"
+            title="NBA League Leaders — Proballers"
+            className="w-full"
+            style={{ minHeight: 720, border: 0, background: "transparent" }}
+            loading="lazy"
+          />
+        </div>
+        <p className="mt-2 text-[11px] text-muted-foreground">
+          Dados: <a className="text-flame hover:underline" href="https://www.proballers.com" target="_blank" rel="noreferrer">Proballers.com</a> — atualizados automaticamente.
+        </p>
+      </section>
+
+      {/* Campeões por temporada */}
+      <section>
+        <div className="mb-3">
+          <div className="eyebrow text-amber">Galeria</div>
+          <h2 className="font-display text-2xl">Campeões por temporada</h2>
+        </div>
+        <div className="mrf-card overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-surface-2 text-left">
+              <tr className="text-[11px] font-display uppercase tracking-widest text-muted-foreground">
+                <th className="px-4 py-3">Temporada</th>
+                <th className="px-4 py-3">Campeão</th>
+                <th className="px-4 py-3 hidden md:table-cell">Finals MVP</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody className="divide-y divide-hairline">
+              {[...CHAMPIONS].sort((a, b) => b.season - a.season).map((c) => (
+                <tr key={c.season} className="hover:bg-surface-2/60">
+                  <td className="px-4 py-3 font-display text-flame">{c.season}–{(c.season + 1).toString().slice(2)}</td>
+                  <td className="px-4 py-3">{c.team}</td>
+                  <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{c.finalsMvp ?? "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
       <div className="text-sm text-muted-foreground">
-        Quer explorar os melhores quintetos da história? <Link to="/lineups" className="text-flame hover:underline">Veja composições históricas →</Link>
+        Quer explorar os melhores quintetos da história?{" "}
+        <Link to="/lineups" className="text-flame hover:underline">Veja composições históricas →</Link>
       </div>
     </div>
   );
