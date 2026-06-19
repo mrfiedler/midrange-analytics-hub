@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { Flame, Zap, ArrowRight, Activity, Shield as ShieldIcon } from "lucide-react";
-import { TOP_PLAYERS, TODAY_LEADERS, RECENT_GAMES } from "@/data/featured";
+import { ArrowRight } from "lucide-react";
 import { MetricTooltip } from "@/components/MetricTooltip";
 import { ChampionBanner } from "@/components/ChampionBanner";
+import { LiveScoreboard } from "@/components/LiveScoreboard";
+import { LeagueLeadersLive } from "@/components/LeagueLeadersLive";
 import { findMetric } from "@/data/glossary";
 
 export const Route = createFileRoute("/")({
