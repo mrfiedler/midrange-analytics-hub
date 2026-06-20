@@ -1,12 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
-import { getTodaysScoreboard } from "@/lib/cdn-nba";
+import { useServerFn } from "@tanstack/react-start";
+import { getLiveScoreboard, type CdnGame } from "@/lib/cdn-nba";
 import { teamLogoUrl } from "@/lib/nba-logos";
 import { Loader2, Radio } from "lucide-react";
 
 export function LiveScoreboard() {
+  const fetchScoreboard = useServerFn(getLiveScoreboard);
+
   const q = useQuery({
     queryKey: ["cdn-scoreboard"],
-    queryFn: getTodaysScoreboard,
+    queryFn: () => fetchScoreboard({}),
     refetchInterval: 30_000,
     staleTime: 15_000,
   });
@@ -42,7 +45,7 @@ export function LiveScoreboard() {
         </div>
       ) : (
         <ul className="mrf-card divide-y divide-hairline">
-          {games.map((g) => {
+          {games.map((g: CdnGame) => {
             const homeWin = g.gameStatus === 3 && g.homeTeam.score > g.awayTeam.score;
             const awayWin = g.gameStatus === 3 && g.awayTeam.score > g.homeTeam.score;
             const live = g.gameStatus === 2;
