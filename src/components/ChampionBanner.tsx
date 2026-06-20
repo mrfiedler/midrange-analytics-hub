@@ -1,43 +1,23 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Trophy } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
 import { CHAMPIONS, getChampionForSeason, type Champion } from "@/data/champions";
 import { teamLogoUrl } from "@/lib/nba-logos";
 import { getCurrentSeason } from "@/lib/season";
-
-/**
- * Tries Wikipedia's NBA_Finals page to detect the latest champion.
- * Falls back to local CHAMPIONS roster on any failure.
- */
-async function fetchWikipediaChampion(): Promise<string | null> {
-  try {
-    const res = await fetch("https://en.wikipedia.org/api/rest_v1/page/summary/NBA_Finals", {
-      headers: { Accept: "application/json" },
-    });
-    if (!res.ok) return null;
-    const json = (await res.json()) as { extract?: string };
-    const text = json.extract ?? "";
-    // Looks for "won by" / "defeated" patterns to extract team name
-    const m =
-      text.match(/won by the ([A-Z][A-Za-z. ]+?)(?:[,.]| in| defeating)/) ||
-      text.match(/([A-Z][A-Za-z. ]+?) defeated/);
-    return m?.[1]?.trim() ?? null;
-  } catch {
-    return null;
-  }
-}
+import { fetchWikipediaChampion } from "@/lib/cdn-nba";
 
 export function ChampionBanner() {
   const fallbackSeason = getCurrentSeason();
   const [champ, setChamp] = useState<Champion>(
     getChampionForSeason(fallbackSeason) ?? CHAMPIONS[0]
   );
+  const fetchWiki = useServerFn(fetchWikipediaChampion);
 
   useEffect(() => {
     let cancelled = false;
-    fetchWikipediaChampion().then((teamName) => {
+    fetchWiki({}).then((teamName) => {
       if (cancelled || !teamName) return;
-      // Try to match against local champions by team name keyword
       const match = CHAMPIONS.find((c) =>
         teamName.toLowerCase().includes(c.team.split(" ").slice(-1)[0].toLowerCase())
       );
@@ -46,7 +26,7 @@ export function ChampionBanner() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [fetchWiki]);
 
   const logo = teamLogoUrl(champ.teamAbbr);
 
