@@ -23,7 +23,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* Sidebar */}
       <aside className="hidden md:flex flex-col w-60 shrink-0 border-r border-hairline bg-sidebar sticky top-0 h-screen">
         <Link to="/" className="px-5 pt-6 pb-4 border-b border-hairline group">
-          <img src={logo.url} alt="Midrange Frenzy" className="h-12 w-auto transition-transform group-hover:scale-[1.02]" />
+          <img src={logo.url} alt="Midrange Frenzy" className="h-16 w-auto transition-transform group-hover:scale-[1.02]" />
           <div className="mt-2 h-[2px] w-12 bg-flame rounded-full" />
         </Link>
         <nav className="flex-1 px-3 py-4 space-y-0.5 scrollbar-thin overflow-y-auto">
