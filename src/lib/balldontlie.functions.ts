@@ -1,9 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { cached } from "@/lib/server-cache";
 
 const BASE = "https://api.balldontlie.io/v1";
 
-async function bdl<T>(path: string, params: Record<string, string | number | undefined> = {}): Promise<T> {
+async function bdl<T>(path: string, params: Record<string, string | number | undefined> = {}, ttlMs = 5 * 60_000): Promise<T> {
   const apiKey = process.env.BALLDONTLIE_API_KEY;
   if (!apiKey) {
     throw new Error("BALLDONTLIE_API_KEY não configurada no servidor.");
@@ -13,16 +14,16 @@ async function bdl<T>(path: string, params: Record<string, string | number | und
     if (v !== undefined && v !== null && v !== "") url.searchParams.set(k, String(v));
   });
 
-  const res = await fetch(url.toString(), {
-    headers: { Authorization: apiKey },
+  return cached(`bdl:${url.toString()}`, ttlMs, async () => {
+    const res = await fetch(url.toString(), { headers: { Authorization: apiKey } });
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(`balldontlie ${res.status}: ${text.slice(0, 200)}`);
+    }
+    return (await res.json()) as T;
   });
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`balldontlie ${res.status}: ${text.slice(0, 200)}`);
-  }
-  return (await res.json()) as T;
 }
+
 
 /* ---------- Player Search ---------- */
 
@@ -197,23 +198,24 @@ export const getSeasonAveragesBulk = createServerFn({ method: "GET" })
   .inputValidator((d) => BulkAvgInput.parse(d))
   .handler(async ({ data }) => {
     try {
-      const params: Record<string, string | number> = { season: data.season };
-      data.playerIds.forEach((id, i) => {
-        (params as any)[`player_ids[${i}]`] = id;
-      });
-      // balldontlie expects repeated player_ids[] — replicate via URLSearchParams
       const url = new URL(`${BASE}/season_averages`);
       url.searchParams.set("season", String(data.season));
-      data.playerIds.forEach((id) => url.searchParams.append("player_ids[]", String(id)));
+      [...data.playerIds].sort((a, b) => a - b).forEach((id) =>
+        url.searchParams.append("player_ids[]", String(id)),
+      );
       const apiKey = process.env.BALLDONTLIE_API_KEY;
       if (!apiKey) throw new Error("BALLDONTLIE_API_KEY missing");
-      const res = await fetch(url.toString(), { headers: { Authorization: apiKey } });
-      if (!res.ok) throw new Error(`balldontlie ${res.status}`);
-      const json = (await res.json()) as { data: any[] };
+
+      const json = await cached(`bdl:${url.toString()}`, 10 * 60_000, async () => {
+        const res = await fetch(url.toString(), { headers: { Authorization: apiKey } });
+        if (!res.ok) throw new Error(`balldontlie ${res.status}`);
+        return (await res.json()) as { data: any[] };
+      });
       return { ok: true as const, averages: json.data };
     } catch (err) {
       console.error("getSeasonAveragesBulk", err);
       return { ok: false as const, averages: [] as any[], error: (err as Error).message };
     }
   });
+
 

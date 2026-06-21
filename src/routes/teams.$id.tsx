@@ -7,8 +7,9 @@ import { StatCard } from "@/components/StatCard";
 import { MetricTooltip } from "@/components/MetricTooltip";
 import { EvolutionChart } from "@/components/charts/EvolutionChart";
 import { getTeamRoster } from "@/lib/balldontlie.functions";
+import { getLeagueTeamStats } from "@/lib/team-stats.functions";
 import { getCurrentSeason } from "@/lib/season";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Radio } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Cell } from "recharts";
 import { PlayerAvatar } from "@/components/players/PlayerAvatar";
 
@@ -27,6 +28,7 @@ function TeamDetail() {
   const team = TEAMS.find((t) => t.id === Number(id));
   const season = getCurrentSeason();
   const fetchRoster = useServerFn(getTeamRoster);
+  const fetchTeamStats = useServerFn(getLeagueTeamStats);
 
   const rosterQ = useQuery({
     queryKey: ["roster", id, season],
@@ -34,26 +36,45 @@ function TeamDetail() {
     enabled: !!team,
   });
 
+  const statsQ = useQuery({
+    queryKey: ["leagueTeamStats", season],
+    queryFn: () => fetchTeamStats({ data: { season } }),
+    staleTime: 30 * 60_000,
+    enabled: !!team,
+  });
+
   if (!team) {
     return <div className="mrf-card p-6">Time não encontrado. <Link to="/teams" className="text-flame">Voltar</Link></div>;
   }
 
-  const netRtg = +(team.ortg - team.drtg).toFixed(1);
+  // Try to find live row by team name (e.g. "Hawks")
+  const liveRow = statsQ.data?.ok
+    ? statsQ.data.rows.find((r) => r.teamName?.toLowerCase().endsWith(team.name.toLowerCase()))
+    : undefined;
+  const isLive = !!liveRow;
+
+  const ortg = liveRow?.ortg ?? team.ortg;
+  const drtg = liveRow?.drtg ?? team.drtg;
+  const pace = liveRow?.pace ?? team.pace;
+  const efg = liveRow?.efg ?? team.efg;
+  const netRtg = +((liveRow?.netRtg ?? ortg - drtg).toFixed(1));
+  const record = liveRow ? `${liveRow.wins}–${liveRow.losses}` : team.record;
   const logo = teamLogoUrl(team.abbr);
 
   const seasonTrend = Array.from({ length: 12 }, (_, i) => ({
     mes: ["Out","Nov","Dez","Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set"][i],
-    Ortg: +(team.ortg + (Math.sin(i / 1.7) * 3)).toFixed(1),
-    Drtg: +(team.drtg + (Math.cos(i / 1.9) * 3)).toFixed(1),
+    Ortg: +(ortg + (Math.sin(i / 1.7) * 3)).toFixed(1),
+    Drtg: +(drtg + (Math.cos(i / 1.9) * 3)).toFixed(1),
   }));
 
   const offDefBars = [
-    { name: "Ortg", value: team.ortg, color: "oklch(0.62 0.23 28)" },
-    { name: "Drtg", value: team.drtg, color: "oklch(0.78 0.13 235)" },
-    { name: "Pace", value: team.pace, color: "oklch(0.78 0.16 70)" },
+    { name: "Ortg", value: ortg, color: "oklch(0.62 0.23 28)" },
+    { name: "Drtg", value: drtg, color: "oklch(0.78 0.13 235)" },
+    { name: "Pace", value: pace, color: "oklch(0.78 0.16 70)" },
   ];
 
   const roster = rosterQ.data?.players ?? [];
+
 
   return (
     <div className="space-y-8 fade-up">
@@ -72,9 +93,22 @@ function TeamDetail() {
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="eyebrow text-amber">{team.conference === "East" ? "Conferência Leste" : "Conferência Oeste"} · {team.division}</div>
+            <div className="eyebrow text-amber flex items-center gap-2">
+              {team.conference === "East" ? "Conferência Leste" : "Conferência Oeste"} · {team.division}
+              {isLive ? (
+                <span className="inline-flex items-center gap-1 rounded-full border border-flame/40 bg-flame/10 px-2 py-0.5 text-[10px] text-flame">
+                  <Radio className="size-3 animate-pulse" /> ao vivo
+                </span>
+              ) : statsQ.isLoading ? (
+                <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+                  <Loader2 className="size-3 animate-spin" /> buscando dados ao vivo…
+                </span>
+              ) : (
+                <span className="text-[10px] text-muted-foreground">· dados de referência</span>
+              )}
+            </div>
             <h1 className="font-display text-4xl md:text-6xl leading-none mt-1">{team.city} {team.name}</h1>
-            <div className="mt-3 text-sm text-muted-foreground">Temporada regular: <span className="text-foreground font-medium">{team.record}</span></div>
+            <div className="mt-3 text-sm text-muted-foreground">Temporada regular: <span className="text-foreground font-medium">{record}</span></div>
           </div>
           <div className="text-right">
             <div className={`number-xl ${netRtg >= 0 ? "text-amber" : "text-muted-foreground"}`}>{netRtg >= 0 ? "+" : ""}{netRtg}</div>
@@ -84,11 +118,12 @@ function TeamDetail() {
       </section>
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard abbr="Ortg" value={team.ortg.toFixed(1)} />
-        <StatCard abbr="Drtg" value={team.drtg.toFixed(1)} accent="court" />
-        <StatCard abbr="Pace" value={team.pace.toFixed(1)} accent="amber" />
-        <StatCard abbr="eFG%" value={`${(team.efg * 100).toFixed(1)}%`} />
+        <StatCard abbr="Ortg" value={ortg.toFixed(1)} />
+        <StatCard abbr="Drtg" value={drtg.toFixed(1)} accent="court" />
+        <StatCard abbr="Pace" value={pace.toFixed(1)} accent="amber" />
+        <StatCard abbr="eFG%" value={`${(efg * 100).toFixed(1)}%`} />
       </section>
+
 
       <section className="grid gap-6 lg:grid-cols-2">
         <div className="mrf-card p-5">

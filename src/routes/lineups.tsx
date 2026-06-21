@@ -78,21 +78,24 @@ function LineupsPage() {
   const addCustom = () => buildLineup.mutate({ teamId: pickTeamId, season: pickSeason });
   const removeSlot = (i: number) => setSlots((s) => s.filter((_, idx) => idx !== i));
 
-  const customRadarSeries = slots.map((slot, i) => {
-    const team = TEAMS.find((t) => t.id === slot.teamId);
-    const a = aggregateAverages(slot.averages);
-    return {
-      name: `${team?.abbr ?? "?"} ${slot.season}`,
-      color: SLOT_COLORS[i] ?? "oklch(0.78 0.16 70)",
-      values: [
-        scoreMetric("PPG", a.pts),
-        scoreMetric("RPG", a.reb),
-        scoreMetric("APG", a.ast),
-        scoreMetric("FG%", a.fg_pct),
-        scoreMetric("3P%", a.fg3_pct),
-      ],
-    };
-  });
+  const customRadarSeries = slots
+    .filter((slot) => slot.averages.length > 0)
+    .map((slot, i) => {
+      const team = TEAMS.find((t) => t.id === slot.teamId);
+      const a = aggregateAverages(slot.averages);
+      return {
+        name: `${team?.abbr ?? "?"} ${slot.season}`,
+        color: SLOT_COLORS[i] ?? "oklch(0.78 0.16 70)",
+        values: [
+          scoreMetric("PPG", a.pts),
+          scoreMetric("RPG", a.reb),
+          scoreMetric("APG", a.ast),
+          scoreMetric("FG%", a.fg_pct),
+          scoreMetric("3P%", a.fg3_pct),
+        ],
+      };
+    });
+
 
   return (
     <div className="space-y-10 fade-up">
@@ -164,8 +167,11 @@ function LineupsPage() {
             <div className="mt-6 grid gap-4 md:grid-cols-2">
               {slots.map((slot, i) => {
                 const team = TEAMS.find((t) => t.id === slot.teamId)!;
+                const hasStats = slot.averages.length > 0;
                 const agg = aggregateAverages(slot.averages);
                 const logo = teamLogoUrl(team.abbr);
+                const fmt = (v: number, pct = false) =>
+                  hasStats ? (pct ? `${(v * 100).toFixed(1)}%` : v.toFixed(1)) : "—";
                 return (
                   <div key={i} className="mrf-card p-4" style={{ borderColor: `color-mix(in oklab, ${SLOT_COLORS[i]} 60%, var(--hairline))` }}>
                     <header className="flex items-center gap-3">
@@ -178,26 +184,37 @@ function LineupsPage() {
                     </header>
 
                     <div className="mt-3 grid grid-cols-5 gap-2 text-center">
-                      <Mini label="PPG" value={agg.pts.toFixed(1)} />
-                      <Mini label="RPG" value={agg.reb.toFixed(1)} />
-                      <Mini label="APG" value={agg.ast.toFixed(1)} />
-                      <Mini label="FG%" value={`${(agg.fg_pct * 100).toFixed(1)}%`} />
-                      <Mini label="3P%" value={`${(agg.fg3_pct * 100).toFixed(1)}%`} />
+                      <Mini label="PPG" value={fmt(agg.pts)} />
+                      <Mini label="RPG" value={fmt(agg.reb)} />
+                      <Mini label="APG" value={fmt(agg.ast)} />
+                      <Mini label="FG%" value={fmt(agg.fg_pct, true)} />
+                      <Mini label="3P%" value={fmt(agg.fg3_pct, true)} />
                     </div>
+
+                    {!hasStats && (
+                      <div className="mt-3 text-[11px] text-amber/90">
+                        Médias da temporada {formatSeason(slot.season)} indisponíveis na API gratuita — exibindo apenas o elenco.
+                      </div>
+                    )}
 
                     <div className="mt-4">
                       <div className="eyebrow mb-1.5">Elenco</div>
-                      <ul className="grid grid-cols-2 gap-1 text-xs">
-                        {slot.players.map((p) => (
-                          <li key={p.id} className="truncate text-muted-foreground">
-                            <span className="text-foreground">{p.fullName}</span> · {p.position || "—"}
-                          </li>
-                        ))}
-                      </ul>
+                      {slot.players.length === 0 ? (
+                        <div className="text-xs text-muted-foreground">Nenhum jogador retornado para esta temporada.</div>
+                      ) : (
+                        <ul className="grid grid-cols-2 gap-1 text-xs">
+                          {slot.players.map((p) => (
+                            <li key={p.id} className="truncate text-muted-foreground">
+                              <span className="text-foreground">{p.fullName}</span> · {p.position || "—"}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
                   </div>
                 );
               })}
+
             </div>
           )}
 
