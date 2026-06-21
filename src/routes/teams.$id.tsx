@@ -93,9 +93,22 @@ function TeamDetail() {
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="eyebrow text-amber">{team.conference === "East" ? "Conferência Leste" : "Conferência Oeste"} · {team.division}</div>
+            <div className="eyebrow text-amber flex items-center gap-2">
+              {team.conference === "East" ? "Conferência Leste" : "Conferência Oeste"} · {team.division}
+              {isLive ? (
+                <span className="inline-flex items-center gap-1 rounded-full border border-flame/40 bg-flame/10 px-2 py-0.5 text-[10px] text-flame">
+                  <Radio className="size-3 animate-pulse" /> ao vivo
+                </span>
+              ) : statsQ.isLoading ? (
+                <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+                  <Loader2 className="size-3 animate-spin" /> buscando dados ao vivo…
+                </span>
+              ) : (
+                <span className="text-[10px] text-muted-foreground">· dados de referência</span>
+              )}
+            </div>
             <h1 className="font-display text-4xl md:text-6xl leading-none mt-1">{team.city} {team.name}</h1>
-            <div className="mt-3 text-sm text-muted-foreground">Temporada regular: <span className="text-foreground font-medium">{team.record}</span></div>
+            <div className="mt-3 text-sm text-muted-foreground">Temporada regular: <span className="text-foreground font-medium">{record}</span></div>
           </div>
           <div className="text-right">
             <div className={`number-xl ${netRtg >= 0 ? "text-amber" : "text-muted-foreground"}`}>{netRtg >= 0 ? "+" : ""}{netRtg}</div>
@@ -105,11 +118,12 @@ function TeamDetail() {
       </section>
 
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard abbr="Ortg" value={team.ortg.toFixed(1)} />
-        <StatCard abbr="Drtg" value={team.drtg.toFixed(1)} accent="court" />
-        <StatCard abbr="Pace" value={team.pace.toFixed(1)} accent="amber" />
-        <StatCard abbr="eFG%" value={`${(team.efg * 100).toFixed(1)}%`} />
+        <StatCard abbr="Ortg" value={ortg.toFixed(1)} />
+        <StatCard abbr="Drtg" value={drtg.toFixed(1)} accent="court" />
+        <StatCard abbr="Pace" value={pace.toFixed(1)} accent="amber" />
+        <StatCard abbr="eFG%" value={`${(efg * 100).toFixed(1)}%`} />
       </section>
+
 
       <section className="grid gap-6 lg:grid-cols-2">
         <div className="mrf-card p-5">
