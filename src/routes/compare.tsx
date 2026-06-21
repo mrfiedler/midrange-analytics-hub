@@ -22,7 +22,7 @@ export const Route = createFileRoute("/compare")({
 const COLORS = ["oklch(0.62 0.23 28)", "oklch(0.45 0.18 305)", "oklch(0.78 0.16 70)", "oklch(0.68 0.14 200)"];
 const AXES = ["PPG", "APG", "RPG", "SPG", "BPG", "FG%", "3P%"] as const;
 
-type Slot = { id: number; name: string; averages: any | null };
+type Slot = { id: number; name: string; averages: any | null; loading: boolean; error?: string };
 
 function ComparePage() {
   const [slots, setSlots] = useState<Slot[]>([]);
@@ -33,10 +33,10 @@ function ComparePage() {
   const addPlayer = async (id: number, name: string) => {
     if (slots.length >= 4) return;
     setShowPicker(false);
-    setSlots((s) => [...s, { id, name, averages: null }]);
+    setSlots((s) => [...s, { id, name, averages: null, loading: true }]);
     const season = getCurrentSeason();
     const res = await profile({ data: { id, season } });
-    setSlots((s) => s.map((slot) => (slot.id === id ? { ...slot, averages: res?.averages ?? null } : slot)));
+    setSlots((s) => s.map((slot) => (slot.id === id ? { ...slot, averages: res?.averages ?? null, loading: false, error: res?.averages ? undefined : "Sem métricas públicas" } : slot)));
   };
 
   const remove = (id: number) => setSlots((s) => s.filter((x) => x.id !== id));
@@ -78,8 +78,10 @@ function ComparePage() {
             <button onClick={() => remove(s.id)} className="absolute right-2 top-2 size-6 rounded-md hover:bg-surface-2 grid place-items-center text-muted-foreground"><X className="size-4" /></button>
             <div className="eyebrow" style={{ color: COLORS[i] }}>Jogador {i + 1}</div>
             <div className="font-display text-xl mt-1 truncate">{s.name}</div>
-            {!s.averages ? (
+            {s.loading ? (
               <div className="mt-3 text-xs text-muted-foreground inline-flex items-center gap-1.5"><Loader2 className="size-3 animate-spin" /> carregando…</div>
+            ) : !s.averages ? (
+              <div className="mt-3 text-xs text-amber">{s.error ?? "Métricas indisponíveis"}</div>
             ) : (
               <div className="mt-3 grid grid-cols-3 gap-2 text-center">
                 <Mini abbr="PPG" value={s.averages.pts.toFixed(1)} />
@@ -177,7 +179,7 @@ function Picker({ onPick, onClose }: { onPick: (id: number, name: string) => voi
 
   useEffect(() => {
     if (q.trim().length < 2) return;
-    const t = setTimeout(() => mutation.mutate(q.trim()), 250);
+    const t = setTimeout(() => mutation.mutate(q.trim()), 400);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q]);
