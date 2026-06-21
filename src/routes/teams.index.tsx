@@ -3,7 +3,7 @@ import { TEAMS } from "@/data/teams";
 import { teamLogoUrl } from "@/lib/nba-logos";
 import { useState } from "react";
 
-export const Route = createFileRoute("/teams")({
+export const Route = createFileRoute("/teams/")({
   head: () => ({
     meta: [
       { title: "Times — Midrange Frenzy" },

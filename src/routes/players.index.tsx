@@ -6,7 +6,7 @@ import { Search, Loader2 } from "lucide-react";
 import { searchPlayers } from "@/lib/balldontlie.functions";
 import { PlayerAvatar } from "@/components/players/PlayerAvatar";
 
-export const Route = createFileRoute("/players")({
+export const Route = createFileRoute("/players/")({
   head: () => ({
     meta: [
       { title: "Jogadores — Midrange Frenzy" },
