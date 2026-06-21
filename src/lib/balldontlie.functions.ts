@@ -4,6 +4,102 @@ import { cached } from "@/lib/server-cache";
 
 const BASE = "https://api.balldontlie.io/v1";
 
+const ESPN_HEADERS = {
+  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
+  Accept: "application/json, text/plain, */*",
+} as const;
+
+const BDL_TO_ESPN_TEAM: Record<number, { id: number; abbr: string }> = {
+  1: { id: 1, abbr: "atl" }, 2: { id: 2, abbr: "bos" }, 3: { id: 17, abbr: "bkn" }, 4: { id: 30, abbr: "cha" },
+  5: { id: 4, abbr: "chi" }, 6: { id: 5, abbr: "cle" }, 7: { id: 6, abbr: "dal" }, 8: { id: 7, abbr: "den" },
+  9: { id: 8, abbr: "det" }, 10: { id: 9, abbr: "gs" }, 11: { id: 10, abbr: "hou" }, 12: { id: 11, abbr: "ind" },
+  13: { id: 12, abbr: "lac" }, 14: { id: 13, abbr: "lal" }, 15: { id: 29, abbr: "mem" }, 16: { id: 14, abbr: "mia" },
+  17: { id: 15, abbr: "mil" }, 18: { id: 16, abbr: "min" }, 19: { id: 3, abbr: "no" }, 20: { id: 18, abbr: "ny" },
+  21: { id: 25, abbr: "okc" }, 22: { id: 19, abbr: "orl" }, 23: { id: 20, abbr: "phi" }, 24: { id: 21, abbr: "phx" },
+  25: { id: 22, abbr: "por" }, 26: { id: 23, abbr: "sac" }, 27: { id: 24, abbr: "sa" }, 28: { id: 28, abbr: "tor" },
+  29: { id: 26, abbr: "utah" }, 30: { id: 27, abbr: "wsh" },
+};
+const ESPN_TO_BDL_TEAM = Object.fromEntries(Object.entries(BDL_TO_ESPN_TEAM).map(([bdl, espn]) => [String(espn.id), Number(bdl)]));
+
+async function fetchJson<T>(url: string, ttlMs = 30 * 60_000): Promise<T> {
+  return cached(`public:${url}`, ttlMs, async () => {
+    const res = await fetch(url.replace(/^http:\/\//, "https://"), { headers: ESPN_HEADERS, signal: AbortSignal.timeout(12_000) });
+    if (!res.ok) throw new Error(`public API ${res.status}`);
+    return (await res.json()) as T;
+  });
+}
+
+function espnSeason(startYear: number) {
+  return startYear + 1;
+}
+
+function collectStats(json: any) {
+  const out: Record<string, number> = {};
+  for (const cat of json?.splits?.categories ?? []) {
+    for (const stat of cat.stats ?? []) out[stat.name] = Number(stat.value ?? 0);
+  }
+  return out;
+}
+
+function toAverageRow(json: any) {
+  const s = collectStats(json);
+  const gp = s.gamesPlayed || 0;
+  const pct = (v: number) => (v > 1 ? v / 100 : v || 0);
+  return {
+    games_played: gp,
+    min: (s.avgMinutes || 0).toFixed(1),
+    pts: s.avgPoints || (gp ? (s.points || 0) / gp : 0),
+    reb: s.avgRebounds || (gp ? (s.rebounds || 0) / gp : 0),
+    ast: s.avgAssists || (gp ? (s.assists || 0) / gp : 0),
+    stl: s.avgSteals || (gp ? (s.steals || 0) / gp : 0),
+    blk: s.avgBlocks || (gp ? (s.blocks || 0) / gp : 0),
+    turnover: s.avgTurnovers || (gp ? (s.turnovers || 0) / gp : 0),
+    pf: s.avgFouls || 0,
+    fgm: s.avgFieldGoalsMade || (gp ? (s.fieldGoalsMade || 0) / gp : 0),
+    fga: s.avgFieldGoalsAttempted || (gp ? (s.fieldGoalsAttempted || 0) / gp : 0),
+    fg_pct: pct(s.fieldGoalPct),
+    fg3m: s.avgThreePointFieldGoalsMade || (gp ? (s.threePointFieldGoalsMade || 0) / gp : 0),
+    fg3a: s.avgThreePointFieldGoalsAttempted || (gp ? (s.threePointFieldGoalsAttempted || 0) / gp : 0),
+    fg3_pct: pct(s.threePointFieldGoalPct || s.threePointPct),
+    ftm: s.avgFreeThrowsMade || (gp ? (s.freeThrowsMade || 0) / gp : 0),
+    fta: s.avgFreeThrowsAttempted || (gp ? (s.freeThrowsAttempted || 0) / gp : 0),
+    ft_pct: pct(s.freeThrowPct),
+    oreb: s.avgOffensiveRebounds || (gp ? (s.offensiveRebounds || 0) / gp : 0),
+    dreb: s.avgDefensiveRebounds || (gp ? (s.defensiveRebounds || 0) / gp : 0),
+    season: json?.season?.year ? Number(json.season.year) - 1 : undefined,
+  };
+}
+
+async function getEspnPlayerStats(id: number, season: number) {
+  const url = `https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/${espnSeason(season)}/types/2/athletes/${id}/statistics/0?lang=en&region=us`;
+  const json = await fetchJson<any>(url, 60 * 60_000);
+  const avg = toAverageRow(json);
+  return avg.games_played > 0 ? avg : null;
+}
+
+async function getEspnPlayerProfile(id: number, season: number) {
+  const json = await fetchJson<any>(`https://site.web.api.espn.com/apis/common/v3/sports/basketball/nba/athletes/${id}`, 60 * 60_000);
+  const a = json.athlete?.id ? json.athlete : await fetchJson<any>(`https://sports.core.api.espn.com/v3/sports/basketball/nba/athletes/${id}`, 60 * 60_000);
+  const team = a.team;
+  const teamId = team?.id ? ESPN_TO_BDL_TEAM[String(team.id)] : undefined;
+  return {
+    id: Number(a.id),
+    firstName: a.firstName ?? "",
+    lastName: a.lastName ?? "",
+    fullName: a.displayName ?? a.fullName ?? `${a.firstName ?? ""} ${a.lastName ?? ""}`.trim(),
+    position: a.position?.abbreviation ?? a.position?.displayName ?? "—",
+    height: a.displayHeight ?? null,
+    weight: a.displayWeight ? String(a.displayWeight).replace(/\s*lbs?$/i, "") : a.weight ? String(a.weight) : null,
+    jersey: a.jersey ?? null,
+    college: a.college?.name ?? null,
+    country: a.birthPlace?.country ?? null,
+    draftYear: a.draft?.year ?? a.debutYear ?? null,
+    draftRound: a.draft?.round ?? null,
+    draftNumber: a.draft?.selection ?? null,
+    team: team ? { id: teamId ?? Number(team.id), abbr: team.abbreviation ?? "—", name: team.displayName ?? team.name ?? "—" } : null,
+  };
+}
+
 async function bdl<T>(path: string, params: Record<string, string | number | undefined> = {}, ttlMs = 5 * 60_000): Promise<T> {
   const apiKey = process.env.BALLDONTLIE_API_KEY;
   if (!apiKey) {
