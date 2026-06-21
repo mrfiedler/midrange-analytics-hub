@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { fetchLeagueLeaders, type LeaderRow } from "@/lib/dataSource";
-import { nbaStatsProxy } from "@/lib/nba-stats.functions";
+import type { LeaderRow } from "@/lib/dataSource";
+import { getPublicLeagueLeaders } from "@/lib/nba-stats.functions";
 import { getCurrentSeason } from "@/lib/season";
 import { SourceBadge, UnavailableCard } from "@/components/SourceBadge";
 import { Loader2 } from "lucide-react";
@@ -22,40 +22,17 @@ const CATS: { key: Cat; label: string }[] = [
 export function LeagueLeadersLive() {
   const [cat, setCat] = useState<Cat>("PTS");
   const season = getCurrentSeason();
-  const proxy = useServerFn(nbaStatsProxy);
+  const leaders = useServerFn(getPublicLeagueLeaders);
 
   const q = useQuery({
     queryKey: ["leaders", season, cat],
     queryFn: async () => {
-      // Reimplement fetchLeagueLeaders via the bound server fn to keep RPC happy
-      const res = await proxy({
-        data: {
-          endpoint: "leagueleaders",
-          params: {
-            LeagueID: "00",
-            Season: `${season}-${String(season + 1).slice(2)}`,
-            SeasonType: "Regular Season",
-            StatCategory: cat,
-            PerMode: "PerGame",
-            Scope: "S",
-          },
-        },
-      });
-      if (!res.ok || !res.data?.resultSet) {
+      const res = await leaders({ data: { cat } });
+      if (!res.ok || res.rows.length === 0) {
         const empty: LeaderRow[] | null = null;
-        return { source: null as null | "nba.com", available: false, data: empty };
+        return { source: null as null | "espn-public", available: false, data: empty };
       }
-      const { headers, rowSet } = res.data.resultSet;
-      const idx = (k: string) => headers.indexOf(k);
-      const rows: LeaderRow[] = rowSet.slice(0, 10).map((r: any[]) => ({
-        rank: r[idx("RANK")] ?? 0,
-        playerId: r[idx("PLAYER_ID")] ?? 0,
-        playerName: r[idx("PLAYER")] ?? "—",
-        teamAbbr: r[idx("TEAM")] ?? "—",
-        value: Number(r[idx(cat)] ?? 0),
-        gp: Number(r[idx("GP")] ?? 0),
-      }));
-      return { source: "nba.com" as const, available: true, data: rows };
+      return { source: "espn-public" as const, available: true, data: res.rows };
     },
     staleTime: 5 * 60_000,
   });
@@ -89,7 +66,7 @@ export function LeagueLeadersLive() {
           <Loader2 className="size-4 animate-spin text-flame" /> Buscando líderes…
         </div>
       ) : !q.data?.available || !q.data.data ? (
-        <UnavailableCard notice="Líderes da liga indisponíveis — stats.nba.com bloqueou a requisição. Tente em alguns minutos." />
+        <UnavailableCard notice="Líderes da liga indisponíveis no momento. Tente em alguns minutos." />
       ) : (
         <>
           <div className="mrf-card overflow-hidden">
@@ -104,7 +81,7 @@ export function LeagueLeadersLive() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-hairline">
-                {q.data.data.map((p) => (
+                {q.data.data.map((p: LeaderRow) => (
                   <tr key={p.playerId} className="hover:bg-surface-2/60 transition-colors">
                     <td className="px-4 py-3 font-display text-flame">{String(p.rank).padStart(2, "0")}</td>
                     <td className="px-4 py-3 font-medium">

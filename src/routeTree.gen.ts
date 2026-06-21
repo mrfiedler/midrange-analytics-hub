@@ -17,6 +17,8 @@ import { Route as LineupsRouteImport } from './routes/lineups'
 import { Route as GlossaryRouteImport } from './routes/glossary'
 import { Route as CompareRouteImport } from './routes/compare'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TeamsIndexRouteImport } from './routes/teams.index'
+import { Route as PlayersIndexRouteImport } from './routes/players.index'
 import { Route as TeamsIdRouteImport } from './routes/teams.$id'
 import { Route as PlayersIdRouteImport } from './routes/players.$id'
 
@@ -60,6 +62,16 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TeamsIndexRoute = TeamsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => TeamsRoute,
+} as any)
+const PlayersIndexRoute = PlayersIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PlayersRoute,
+} as any)
 const TeamsIdRoute = TeamsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -82,18 +94,20 @@ export interface FileRoutesByFullPath {
   '/teams': typeof TeamsRouteWithChildren
   '/players/$id': typeof PlayersIdRoute
   '/teams/$id': typeof TeamsIdRoute
+  '/players/': typeof PlayersIndexRoute
+  '/teams/': typeof TeamsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/compare': typeof CompareRoute
   '/glossary': typeof GlossaryRoute
   '/lineups': typeof LineupsRoute
-  '/players': typeof PlayersRouteWithChildren
   '/seasons': typeof SeasonsRoute
   '/settings': typeof SettingsRoute
-  '/teams': typeof TeamsRouteWithChildren
   '/players/$id': typeof PlayersIdRoute
   '/teams/$id': typeof TeamsIdRoute
+  '/players': typeof PlayersIndexRoute
+  '/teams': typeof TeamsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -107,6 +121,8 @@ export interface FileRoutesById {
   '/teams': typeof TeamsRouteWithChildren
   '/players/$id': typeof PlayersIdRoute
   '/teams/$id': typeof TeamsIdRoute
+  '/players/': typeof PlayersIndexRoute
+  '/teams/': typeof TeamsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -121,18 +137,20 @@ export interface FileRouteTypes {
     | '/teams'
     | '/players/$id'
     | '/teams/$id'
+    | '/players/'
+    | '/teams/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/compare'
     | '/glossary'
     | '/lineups'
-    | '/players'
     | '/seasons'
     | '/settings'
-    | '/teams'
     | '/players/$id'
     | '/teams/$id'
+    | '/players'
+    | '/teams'
   id:
     | '__root__'
     | '/'
@@ -145,6 +163,8 @@ export interface FileRouteTypes {
     | '/teams'
     | '/players/$id'
     | '/teams/$id'
+    | '/players/'
+    | '/teams/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -216,6 +236,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/teams/': {
+      id: '/teams/'
+      path: '/'
+      fullPath: '/teams/'
+      preLoaderRoute: typeof TeamsIndexRouteImport
+      parentRoute: typeof TeamsRoute
+    }
+    '/players/': {
+      id: '/players/'
+      path: '/'
+      fullPath: '/players/'
+      preLoaderRoute: typeof PlayersIndexRouteImport
+      parentRoute: typeof PlayersRoute
+    }
     '/teams/$id': {
       id: '/teams/$id'
       path: '/$id'
@@ -235,10 +269,12 @@ declare module '@tanstack/react-router' {
 
 interface PlayersRouteChildren {
   PlayersIdRoute: typeof PlayersIdRoute
+  PlayersIndexRoute: typeof PlayersIndexRoute
 }
 
 const PlayersRouteChildren: PlayersRouteChildren = {
   PlayersIdRoute: PlayersIdRoute,
+  PlayersIndexRoute: PlayersIndexRoute,
 }
 
 const PlayersRouteWithChildren =
@@ -246,10 +282,12 @@ const PlayersRouteWithChildren =
 
 interface TeamsRouteChildren {
   TeamsIdRoute: typeof TeamsIdRoute
+  TeamsIndexRoute: typeof TeamsIndexRoute
 }
 
 const TeamsRouteChildren: TeamsRouteChildren = {
   TeamsIdRoute: TeamsIdRoute,
+  TeamsIndexRoute: TeamsIndexRoute,
 }
 
 const TeamsRouteWithChildren = TeamsRoute._addFileChildren(TeamsRouteChildren)

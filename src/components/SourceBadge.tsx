@@ -4,7 +4,7 @@ export function SourceBadge({
   source,
   notice,
 }: {
-  source: "nba.com" | "balldontlie-derived" | null;
+  source: "nba.com" | "espn-public" | "balldontlie-derived" | null;
   notice?: string;
 }) {
   if (source === "nba.com") {
@@ -12,6 +12,14 @@ export function SourceBadge({
       <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-widest text-muted-foreground">
         <CheckCircle2 className="size-3 text-emerald-400/80" />
         via stats.nba.com
+      </span>
+    );
+  }
+  if (source === "espn-public") {
+    return (
+      <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-widest text-muted-foreground">
+        <CheckCircle2 className="size-3 text-emerald-400/80" />
+        via API pública ESPN
       </span>
     );
   }

@@ -56,7 +56,7 @@ function LineupsPage() {
     mutationFn: async ({ teamId, season }: { teamId: number; season: number }) => {
       const roster = await fetchRoster({ data: { teamId, season } });
       if (!roster.ok) throw new Error(roster.error);
-      const ids = roster.players.slice(0, 15).map((p) => p.id);
+      const ids = roster.players.slice(0, 15).map((p: { id: number }) => p.id);
       let averages: any[] = [];
       if (ids.length > 0) {
         const avg = await fetchAverages({ data: { season, playerIds: ids } });
