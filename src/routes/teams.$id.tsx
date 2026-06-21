@@ -182,7 +182,7 @@ function TeamDetail() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-hairline">
-                {roster.map((p) => (
+                {roster.map((p: { id: number; firstName: string; lastName: string; fullName: string; position: string; height?: string | null; jersey?: string | null }) => (
                   <tr key={p.id} className="hover:bg-surface-2/60">
                     <td className="px-4 py-3 text-amber font-display">{p.jersey ?? "—"}</td>
                     <td className="px-4 py-3 font-medium">

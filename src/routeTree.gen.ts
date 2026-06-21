@@ -9,8 +9,10 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TeamsRouteImport } from './routes/teams'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SeasonsRouteImport } from './routes/seasons'
+import { Route as PlayersRouteImport } from './routes/players'
 import { Route as LineupsRouteImport } from './routes/lineups'
 import { Route as GlossaryRouteImport } from './routes/glossary'
 import { Route as CompareRouteImport } from './routes/compare'
@@ -20,6 +22,11 @@ import { Route as PlayersIndexRouteImport } from './routes/players.index'
 import { Route as TeamsIdRouteImport } from './routes/teams.$id'
 import { Route as PlayersIdRouteImport } from './routes/players.$id'
 
+const TeamsRoute = TeamsRouteImport.update({
+  id: '/teams',
+  path: '/teams',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -28,6 +35,11 @@ const SettingsRoute = SettingsRouteImport.update({
 const SeasonsRoute = SeasonsRouteImport.update({
   id: '/seasons',
   path: '/seasons',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlayersRoute = PlayersRouteImport.update({
+  id: '/players',
+  path: '/players',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LineupsRoute = LineupsRouteImport.update({
@@ -51,24 +63,24 @@ const IndexRoute = IndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const TeamsIndexRoute = TeamsIndexRouteImport.update({
-  id: '/teams/',
-  path: '/teams/',
-  getParentRoute: () => rootRouteImport,
+  id: '/',
+  path: '/',
+  getParentRoute: () => TeamsRoute,
 } as any)
 const PlayersIndexRoute = PlayersIndexRouteImport.update({
-  id: '/players/',
-  path: '/players/',
-  getParentRoute: () => rootRouteImport,
+  id: '/',
+  path: '/',
+  getParentRoute: () => PlayersRoute,
 } as any)
 const TeamsIdRoute = TeamsIdRouteImport.update({
-  id: '/teams/$id',
-  path: '/teams/$id',
-  getParentRoute: () => rootRouteImport,
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => TeamsRoute,
 } as any)
 const PlayersIdRoute = PlayersIdRouteImport.update({
-  id: '/players/$id',
-  path: '/players/$id',
-  getParentRoute: () => rootRouteImport,
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => PlayersRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -76,8 +88,10 @@ export interface FileRoutesByFullPath {
   '/compare': typeof CompareRoute
   '/glossary': typeof GlossaryRoute
   '/lineups': typeof LineupsRoute
+  '/players': typeof PlayersRouteWithChildren
   '/seasons': typeof SeasonsRoute
   '/settings': typeof SettingsRoute
+  '/teams': typeof TeamsRouteWithChildren
   '/players/$id': typeof PlayersIdRoute
   '/teams/$id': typeof TeamsIdRoute
   '/players/': typeof PlayersIndexRoute
@@ -101,8 +115,10 @@ export interface FileRoutesById {
   '/compare': typeof CompareRoute
   '/glossary': typeof GlossaryRoute
   '/lineups': typeof LineupsRoute
+  '/players': typeof PlayersRouteWithChildren
   '/seasons': typeof SeasonsRoute
   '/settings': typeof SettingsRoute
+  '/teams': typeof TeamsRouteWithChildren
   '/players/$id': typeof PlayersIdRoute
   '/teams/$id': typeof TeamsIdRoute
   '/players/': typeof PlayersIndexRoute
@@ -115,8 +131,10 @@ export interface FileRouteTypes {
     | '/compare'
     | '/glossary'
     | '/lineups'
+    | '/players'
     | '/seasons'
     | '/settings'
+    | '/teams'
     | '/players/$id'
     | '/teams/$id'
     | '/players/'
@@ -139,8 +157,10 @@ export interface FileRouteTypes {
     | '/compare'
     | '/glossary'
     | '/lineups'
+    | '/players'
     | '/seasons'
     | '/settings'
+    | '/teams'
     | '/players/$id'
     | '/teams/$id'
     | '/players/'
@@ -152,16 +172,21 @@ export interface RootRouteChildren {
   CompareRoute: typeof CompareRoute
   GlossaryRoute: typeof GlossaryRoute
   LineupsRoute: typeof LineupsRoute
+  PlayersRoute: typeof PlayersRouteWithChildren
   SeasonsRoute: typeof SeasonsRoute
   SettingsRoute: typeof SettingsRoute
-  PlayersIdRoute: typeof PlayersIdRoute
-  TeamsIdRoute: typeof TeamsIdRoute
-  PlayersIndexRoute: typeof PlayersIndexRoute
-  TeamsIndexRoute: typeof TeamsIndexRoute
+  TeamsRoute: typeof TeamsRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/teams': {
+      id: '/teams'
+      path: '/teams'
+      fullPath: '/teams'
+      preLoaderRoute: typeof TeamsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings': {
       id: '/settings'
       path: '/settings'
@@ -174,6 +199,13 @@ declare module '@tanstack/react-router' {
       path: '/seasons'
       fullPath: '/seasons'
       preLoaderRoute: typeof SeasonsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/players': {
+      id: '/players'
+      path: '/players'
+      fullPath: '/players'
+      preLoaderRoute: typeof PlayersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/lineups': {
@@ -206,46 +238,69 @@ declare module '@tanstack/react-router' {
     }
     '/teams/': {
       id: '/teams/'
-      path: '/teams'
+      path: '/'
       fullPath: '/teams/'
       preLoaderRoute: typeof TeamsIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof TeamsRoute
     }
     '/players/': {
       id: '/players/'
-      path: '/players'
+      path: '/'
       fullPath: '/players/'
       preLoaderRoute: typeof PlayersIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof PlayersRoute
     }
     '/teams/$id': {
       id: '/teams/$id'
-      path: '/teams/$id'
+      path: '/$id'
       fullPath: '/teams/$id'
       preLoaderRoute: typeof TeamsIdRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof TeamsRoute
     }
     '/players/$id': {
       id: '/players/$id'
-      path: '/players/$id'
+      path: '/$id'
       fullPath: '/players/$id'
       preLoaderRoute: typeof PlayersIdRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof PlayersRoute
     }
   }
 }
+
+interface PlayersRouteChildren {
+  PlayersIdRoute: typeof PlayersIdRoute
+  PlayersIndexRoute: typeof PlayersIndexRoute
+}
+
+const PlayersRouteChildren: PlayersRouteChildren = {
+  PlayersIdRoute: PlayersIdRoute,
+  PlayersIndexRoute: PlayersIndexRoute,
+}
+
+const PlayersRouteWithChildren =
+  PlayersRoute._addFileChildren(PlayersRouteChildren)
+
+interface TeamsRouteChildren {
+  TeamsIdRoute: typeof TeamsIdRoute
+  TeamsIndexRoute: typeof TeamsIndexRoute
+}
+
+const TeamsRouteChildren: TeamsRouteChildren = {
+  TeamsIdRoute: TeamsIdRoute,
+  TeamsIndexRoute: TeamsIndexRoute,
+}
+
+const TeamsRouteWithChildren = TeamsRoute._addFileChildren(TeamsRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CompareRoute: CompareRoute,
   GlossaryRoute: GlossaryRoute,
   LineupsRoute: LineupsRoute,
+  PlayersRoute: PlayersRouteWithChildren,
   SeasonsRoute: SeasonsRoute,
   SettingsRoute: SettingsRoute,
-  PlayersIdRoute: PlayersIdRoute,
-  TeamsIdRoute: TeamsIdRoute,
-  PlayersIndexRoute: PlayersIndexRoute,
-  TeamsIndexRoute: TeamsIndexRoute,
+  TeamsRoute: TeamsRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
