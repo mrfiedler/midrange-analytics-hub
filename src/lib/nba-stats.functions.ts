@@ -37,9 +37,9 @@ const LEADER_SORT: Record<z.infer<typeof LeaderInput>["cat"], string> = {
   FG3M: "offensive.avgThreePointFieldGoalsMade:desc",
 };
 
-function statValue(row: any, category: string, name: string) {
+function statValue(row: any, allCategories: any[], category: string, name: string) {
   const cat = row.categories?.find((c: any) => c.name === category);
-  const labels = cat?.names ?? [];
+  const labels = cat?.names ?? allCategories.find((c: any) => c.name === category)?.names ?? [];
   const index = labels.indexOf(name);
   return Number(index >= 0 ? cat.values?.[index] ?? 0 : 0);
 }
@@ -87,18 +87,19 @@ export const getPublicLeagueLeaders = createServerFn({ method: "GET" })
       const res = await fetch(url.toString(), { headers: ESPN_HEADERS, signal: AbortSignal.timeout(10_000) });
       if (!res.ok) return { ok: false as const, rows: [], error: `public leaders ${res.status}` };
       const json = await res.json();
+      const categories = json.categories ?? [];
       const rows = (json.athletes ?? []).map((row: any, index: number) => ({
         rank: index + 1,
         playerId: Number(row.athlete?.id ?? 0),
         playerName: row.athlete?.displayName ?? "—",
         teamAbbr: row.athlete?.team?.abbreviation ?? "—",
-        value: data.cat === "PTS" ? statValue(row, "offensive", "avgPoints")
-          : data.cat === "AST" ? statValue(row, "offensive", "avgAssists")
-          : data.cat === "REB" ? statValue(row, "general", "avgRebounds")
-          : data.cat === "STL" ? statValue(row, "defensive", "avgSteals")
-          : data.cat === "BLK" ? statValue(row, "defensive", "avgBlocks")
-          : statValue(row, "offensive", "avgThreePointFieldGoalsMade"),
-        gp: statValue(row, "general", "gamesPlayed"),
+        value: data.cat === "PTS" ? statValue(row, categories, "offensive", "avgPoints")
+          : data.cat === "AST" ? statValue(row, categories, "offensive", "avgAssists")
+          : data.cat === "REB" ? statValue(row, categories, "general", "avgRebounds")
+          : data.cat === "STL" ? statValue(row, categories, "defensive", "avgSteals")
+          : data.cat === "BLK" ? statValue(row, categories, "defensive", "avgBlocks")
+          : statValue(row, categories, "offensive", "avgThreePointFieldGoalsMade"),
+        gp: statValue(row, categories, "general", "gamesPlayed"),
       })).filter((row: any) => row.playerId && row.value > 0);
       return { ok: true as const, rows };
     } catch (err) {
