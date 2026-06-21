@@ -198,23 +198,24 @@ export const getSeasonAveragesBulk = createServerFn({ method: "GET" })
   .inputValidator((d) => BulkAvgInput.parse(d))
   .handler(async ({ data }) => {
     try {
-      const params: Record<string, string | number> = { season: data.season };
-      data.playerIds.forEach((id, i) => {
-        (params as any)[`player_ids[${i}]`] = id;
-      });
-      // balldontlie expects repeated player_ids[] — replicate via URLSearchParams
       const url = new URL(`${BASE}/season_averages`);
       url.searchParams.set("season", String(data.season));
-      data.playerIds.forEach((id) => url.searchParams.append("player_ids[]", String(id)));
+      [...data.playerIds].sort((a, b) => a - b).forEach((id) =>
+        url.searchParams.append("player_ids[]", String(id)),
+      );
       const apiKey = process.env.BALLDONTLIE_API_KEY;
       if (!apiKey) throw new Error("BALLDONTLIE_API_KEY missing");
-      const res = await fetch(url.toString(), { headers: { Authorization: apiKey } });
-      if (!res.ok) throw new Error(`balldontlie ${res.status}`);
-      const json = (await res.json()) as { data: any[] };
+
+      const json = await cached(`bdl:${url.toString()}`, 10 * 60_000, async () => {
+        const res = await fetch(url.toString(), { headers: { Authorization: apiKey } });
+        if (!res.ok) throw new Error(`balldontlie ${res.status}`);
+        return (await res.json()) as { data: any[] };
+      });
       return { ok: true as const, averages: json.data };
     } catch (err) {
       console.error("getSeasonAveragesBulk", err);
       return { ok: false as const, averages: [] as any[], error: (err as Error).message };
     }
   });
+
 
