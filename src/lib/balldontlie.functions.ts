@@ -131,18 +131,25 @@ export const searchPlayers = createServerFn({ method: "GET" })
   .inputValidator((d) => SearchInput.parse(d))
   .handler(async ({ data }) => {
     try {
-      const res = await bdl<{
-        data: Array<{
-          id: number;
-          first_name: string;
-          last_name: string;
-          position: string | null;
-          height: string | null;
-          weight: string | null;
-          jersey_number: string | null;
-          team: { id: number; abbreviation: string; full_name: string } | null;
-        }>;
-      }>(`/players`, { search: data.q, per_page: 25 });
+      const all = await fetchJson<{ items: any[] }>("https://sports.core.api.espn.com/v3/sports/basketball/nba/athletes?limit=1000", 6 * 60 * 60_000);
+      const terms = data.q.toLowerCase().split(/\s+/).filter(Boolean);
+      const players = all.items
+        .filter((p) => terms.every((term) => String(p.displayName ?? p.fullName ?? "").toLowerCase().includes(term)))
+        .slice(0, 25)
+        .map((p) => ({
+          id: Number(p.id),
+          firstName: p.firstName ?? "",
+          lastName: p.lastName ?? "",
+          fullName: p.displayName ?? p.fullName ?? `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim(),
+          position: p.position?.abbreviation ?? p.position?.displayName ?? "—",
+          height: p.displayHeight ?? null,
+          weight: p.displayWeight ? String(p.displayWeight).replace(/\s*lbs?$/i, "") : p.weight ? String(p.weight) : null,
+          jersey: p.jersey ?? null,
+          team: p.team ? { id: ESPN_TO_BDL_TEAM[String(p.team.id)] ?? Number(p.team.id), abbr: p.team.abbreviation, name: p.team.displayName } : null,
+        }));
+      if (players.length > 0) return { ok: true as const, players };
+
+      const res = await bdl<{ data: Array<{ id: number; first_name: string; last_name: string; position: string | null; height: string | null; weight: string | null; jersey_number: string | null; team: { id: number; abbreviation: string; full_name: string } | null; }>; }>(`/players`, { search: data.q, per_page: 25 });
       return {
         ok: true as const,
         players: res.data.map((p) => ({
@@ -173,6 +180,17 @@ const PlayerInput = z.object({
 export const getPlayerProfile = createServerFn({ method: "GET" })
   .inputValidator((d) => PlayerInput.parse(d))
   .handler(async ({ data }) => {
+    const season = data.season ?? 2024;
+    try {
+      const [player, averages] = await Promise.all([
+        getEspnPlayerProfile(data.id, season),
+        getEspnPlayerStats(data.id, season).catch(() => null),
+      ]);
+      return { ok: true as const, season, player, averages };
+    } catch (espnErr) {
+      console.warn("getPlayerProfile ESPN fallback", espnErr);
+    }
+
     try {
       const player = await bdl<{
         data: {
@@ -192,7 +210,6 @@ export const getPlayerProfile = createServerFn({ method: "GET" })
         };
       }>(`/players/${data.id}`);
 
-      const season = data.season ?? 2024;
       let averages: any = null;
       try {
         const avg = await bdl<{
