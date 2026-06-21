@@ -182,11 +182,18 @@ export const getPlayerProfile = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const season = data.season ?? 2024;
     try {
-      const [player, averages] = await Promise.all([
-        getEspnPlayerProfile(data.id, season),
-        getEspnPlayerStats(data.id, season).catch(() => null),
-      ]);
-      return { ok: true as const, season, player, averages };
+      const player = await getEspnPlayerProfile(data.id, season);
+      const seasonsToTry = [season, ...Array.from({ length: Math.min(20, season - 1979) }, (_, i) => season - i - 1)];
+      let averages: Awaited<ReturnType<typeof getEspnPlayerStats>> = null;
+      let statSeason = season;
+      for (const candidate of seasonsToTry) {
+        averages = await getEspnPlayerStats(data.id, candidate).catch(() => null);
+        if (averages) {
+          statSeason = candidate;
+          break;
+        }
+      }
+      return { ok: true as const, season: statSeason, player, averages };
     } catch (espnErr) {
       console.warn("getPlayerProfile ESPN fallback", espnErr);
     }
