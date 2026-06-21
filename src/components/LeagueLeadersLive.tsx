@@ -81,7 +81,7 @@ export function LeagueLeadersLive() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-hairline">
-                {q.data.data.map((p) => (
+                {q.data.data.map((p: LeaderRow) => (
                   <tr key={p.playerId} className="hover:bg-surface-2/60 transition-colors">
                     <td className="px-4 py-3 font-display text-flame">{String(p.rank).padStart(2, "0")}</td>
                     <td className="px-4 py-3 font-medium">
