@@ -268,6 +268,29 @@ export const getTeamRoster = createServerFn({ method: "GET" })
   .inputValidator((d) => RosterInput.parse(d))
   .handler(async ({ data }) => {
     try {
+      const espn = BDL_TO_ESPN_TEAM[data.teamId];
+      if (espn) {
+        const season = data.season ?? 2024;
+        const url = season >= 2025
+          ? `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/${espn.abbr}/roster`
+          : `https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/${espnSeason(season)}/teams/${espn.id}/athletes?limit=50`;
+        const raw = await fetchJson<any>(url, 60 * 60_000);
+        const refs = raw.items?.map((x: any) => String(x.$ref ?? "")) ?? [];
+        const athletes = raw.athletes ?? (await Promise.all(refs.slice(0, 30).map((ref: string) => fetchJson<any>(ref, 60 * 60_000).catch(() => null)))).filter(Boolean);
+        return {
+          ok: true as const,
+          players: athletes.map((p: any) => ({
+            id: Number(p.id),
+            firstName: p.firstName ?? "",
+            lastName: p.lastName ?? "",
+            fullName: p.displayName ?? p.fullName ?? `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim(),
+            position: p.position?.abbreviation ?? p.position?.displayName ?? "—",
+            height: p.displayHeight ?? null,
+            jersey: p.jersey ?? null,
+          })).filter((p: any) => p.id && p.fullName),
+        };
+      }
+
       const params: Record<string, string | number> = { "team_ids[]": data.teamId, per_page: 30 };
       if (data.season) params.seasons = data.season;
       const res = await bdl<{
@@ -311,6 +334,11 @@ export const getSeasonAveragesBulk = createServerFn({ method: "GET" })
   .inputValidator((d) => BulkAvgInput.parse(d))
   .handler(async ({ data }) => {
     try {
+      const rows = (await Promise.all(data.playerIds.map((id) => getEspnPlayerStats(id, data.season).catch(() => null))))
+        .map((row, i) => row ? { ...row, player_id: data.playerIds[i] } : null)
+        .filter(Boolean);
+      if (rows.length > 0) return { ok: true as const, averages: rows };
+
       const url = new URL(`${BASE}/season_averages`);
       url.searchParams.set("season", String(data.season));
       [...data.playerIds].sort((a, b) => a - b).forEach((id) =>
