@@ -78,21 +78,24 @@ function LineupsPage() {
   const addCustom = () => buildLineup.mutate({ teamId: pickTeamId, season: pickSeason });
   const removeSlot = (i: number) => setSlots((s) => s.filter((_, idx) => idx !== i));
 
-  const customRadarSeries = slots.map((slot, i) => {
-    const team = TEAMS.find((t) => t.id === slot.teamId);
-    const a = aggregateAverages(slot.averages);
-    return {
-      name: `${team?.abbr ?? "?"} ${slot.season}`,
-      color: SLOT_COLORS[i] ?? "oklch(0.78 0.16 70)",
-      values: [
-        scoreMetric("PPG", a.pts),
-        scoreMetric("RPG", a.reb),
-        scoreMetric("APG", a.ast),
-        scoreMetric("FG%", a.fg_pct),
-        scoreMetric("3P%", a.fg3_pct),
-      ],
-    };
-  });
+  const customRadarSeries = slots
+    .filter((slot) => slot.averages.length > 0)
+    .map((slot, i) => {
+      const team = TEAMS.find((t) => t.id === slot.teamId);
+      const a = aggregateAverages(slot.averages);
+      return {
+        name: `${team?.abbr ?? "?"} ${slot.season}`,
+        color: SLOT_COLORS[i] ?? "oklch(0.78 0.16 70)",
+        values: [
+          scoreMetric("PPG", a.pts),
+          scoreMetric("RPG", a.reb),
+          scoreMetric("APG", a.ast),
+          scoreMetric("FG%", a.fg_pct),
+          scoreMetric("3P%", a.fg3_pct),
+        ],
+      };
+    });
+
 
   return (
     <div className="space-y-10 fade-up">
