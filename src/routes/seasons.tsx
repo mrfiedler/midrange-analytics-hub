@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { CHAMPIONS } from "@/data/champions";
+import { LeagueLeadersLive } from "@/components/LeagueLeadersLive";
 
 export const Route = createFileRoute("/seasons")({
   head: () => ({
@@ -22,27 +23,7 @@ function SeasonsPage() {
         </p>
       </header>
 
-      {/* Líderes via widget Proballers (sempre atualizado) */}
-      <section>
-        <div className="mb-3 flex items-end justify-between">
-          <div>
-            <div className="eyebrow text-flame">Temporada atual</div>
-            <h2 className="font-display text-2xl">Líderes da liga</h2>
-          </div>
-        </div>
-        <div className="mrf-card overflow-hidden">
-          <iframe
-            src="https://widgets.proballers.com/en/widget/league-leaders/nba"
-            title="NBA League Leaders — Proballers"
-            className="w-full"
-            style={{ minHeight: 720, border: 0, background: "transparent" }}
-            loading="lazy"
-          />
-        </div>
-        <p className="mt-2 text-[11px] text-muted-foreground">
-          Dados: <a className="text-flame hover:underline" href="https://www.proballers.com" target="_blank" rel="noreferrer">Proballers.com</a> — atualizados automaticamente.
-        </p>
-      </section>
+      <LeagueLeadersLive />
 
       {/* Campeões por temporada */}
       <section>
