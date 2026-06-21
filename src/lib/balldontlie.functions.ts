@@ -1,9 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { cached } from "@/lib/server-cache";
 
 const BASE = "https://api.balldontlie.io/v1";
 
-async function bdl<T>(path: string, params: Record<string, string | number | undefined> = {}): Promise<T> {
+async function bdl<T>(path: string, params: Record<string, string | number | undefined> = {}, ttlMs = 5 * 60_000): Promise<T> {
   const apiKey = process.env.BALLDONTLIE_API_KEY;
   if (!apiKey) {
     throw new Error("BALLDONTLIE_API_KEY não configurada no servidor.");
@@ -13,16 +14,16 @@ async function bdl<T>(path: string, params: Record<string, string | number | und
     if (v !== undefined && v !== null && v !== "") url.searchParams.set(k, String(v));
   });
 
-  const res = await fetch(url.toString(), {
-    headers: { Authorization: apiKey },
+  return cached(`bdl:${url.toString()}`, ttlMs, async () => {
+    const res = await fetch(url.toString(), { headers: { Authorization: apiKey } });
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(`balldontlie ${res.status}: ${text.slice(0, 200)}`);
+    }
+    return (await res.json()) as T;
   });
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`balldontlie ${res.status}: ${text.slice(0, 200)}`);
-  }
-  return (await res.json()) as T;
 }
+
 
 /* ---------- Player Search ---------- */
 
