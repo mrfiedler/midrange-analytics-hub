@@ -147,33 +147,8 @@ function PlayerProfile() {
             )}
           </section>
 
-          {/* Charts */}
-          <section className="grid gap-6 lg:grid-cols-2">
-            <div className="mrf-card p-5">
-              <div className="eyebrow">Perfil completo</div>
-              <h3 className="font-display text-xl mb-2">Radar do jogador</h3>
-              <PlayerRadar
-                axes={["PPG", "APG", "RPG", "SPG", "BPG", "FG%", "3P%"]}
-                series={[{ name: player.lastName, color: "oklch(0.62 0.23 28)", values: radarValues }]}
-              />
-            </div>
-            <div className="mrf-card p-5">
-              <div className="eyebrow">Evolução estimada</div>
-              <h3 className="font-display text-xl mb-2">5 temporadas (ilustrativo)</h3>
-              <EvolutionChart
-                data={evolution}
-                xKey="season"
-                series={[
-                  { name: "PPG", dataKey: "PPG", color: "oklch(0.62 0.23 28)" },
-                  { name: "APG", dataKey: "APG", color: "oklch(0.45 0.18 305)" },
-                  { name: "RPG", dataKey: "RPG", color: "oklch(0.78 0.16 70)" },
-                ]}
-              />
-              <p className="text-[11px] text-muted-foreground mt-2">
-                Curva ilustrativa baseada na temporada selecionada — para histórico exato use o seletor de temporada.
-              </p>
-            </div>
-          </section>
+
+
 
           {/* Raw stat table */}
           <section>
