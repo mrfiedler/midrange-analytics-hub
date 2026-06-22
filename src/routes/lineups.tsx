@@ -223,8 +223,12 @@ function LineupsPage() {
               <div className="eyebrow">Perfil coletivo</div>
               <h3 className="font-display text-xl mb-2">Radar comparativo</h3>
               <PlayerRadar axes={[...RADAR_AXES]} series={customRadarSeries} />
+              <p className="mt-2 text-[11px] italic text-muted-foreground">
+                Média simples do elenco completo listado, e não estatísticas oficiais de equipe.
+              </p>
             </div>
           )}
+
         </div>
       </section>
 
