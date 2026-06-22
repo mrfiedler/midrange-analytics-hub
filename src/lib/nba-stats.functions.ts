@@ -86,7 +86,10 @@ export const getPublicLeagueLeaders = createServerFn({ method: "GET" })
       url.searchParams.set("page", "1");
       url.searchParams.set("limit", "10");
       url.searchParams.set("sort", LEADER_SORT[data.cat]);
+      // ESPN season param uses END year: season=2025 ⇒ 2024–25
+      if (data.season) url.searchParams.set("season", String(data.season + 1));
       const res = await fetch(url.toString(), { headers: ESPN_HEADERS, signal: AbortSignal.timeout(10_000) });
+
       if (!res.ok) return { ok: false as const, rows: [], error: `public leaders ${res.status}` };
       const json = await res.json();
       const categories = json.categories ?? [];
