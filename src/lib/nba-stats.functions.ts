@@ -26,7 +26,9 @@ const ProxyInput = z.object({
 
 const LeaderInput = z.object({
   cat: z.enum(["PTS", "REB", "AST", "STL", "BLK", "FG3M"]),
+  season: z.number().int().min(2002).max(2100).optional(),
 });
+
 
 const LEADER_SORT: Record<z.infer<typeof LeaderInput>["cat"], string> = {
   PTS: "offensive.avgPoints:desc",
@@ -82,17 +84,19 @@ export const getPublicLeagueLeaders = createServerFn({ method: "GET" })
       url.searchParams.set("lang", "en");
       url.searchParams.set("contentorigin", "espn");
       url.searchParams.set("page", "1");
-      url.searchParams.set("limit", "10");
+      url.searchParams.set("limit", "60");
       url.searchParams.set("sort", LEADER_SORT[data.cat]);
+      // ESPN season param uses END year: season=2025 ⇒ 2024–25
+      if (data.season) url.searchParams.set("season", String(data.season + 1));
       const res = await fetch(url.toString(), { headers: ESPN_HEADERS, signal: AbortSignal.timeout(10_000) });
+
       if (!res.ok) return { ok: false as const, rows: [], error: `public leaders ${res.status}` };
       const json = await res.json();
       const categories = json.categories ?? [];
-      const rows = (json.athletes ?? []).map((row: any, index: number) => ({
-        rank: index + 1,
+      const all = (json.athletes ?? []).map((row: any) => ({
         playerId: Number(row.athlete?.id ?? 0),
         playerName: row.athlete?.displayName ?? "—",
-        teamAbbr: row.athlete?.team?.abbreviation ?? "—",
+        teamAbbr: row.athlete?.team?.abbreviation ?? row.athlete?.teamShortName ?? "—",
         value: data.cat === "PTS" ? statValue(row, categories, "offensive", "avgPoints")
           : data.cat === "AST" ? statValue(row, categories, "offensive", "avgAssists")
           : data.cat === "REB" ? statValue(row, categories, "general", "avgRebounds")
@@ -100,8 +104,20 @@ export const getPublicLeagueLeaders = createServerFn({ method: "GET" })
           : data.cat === "BLK" ? statValue(row, categories, "defensive", "avgBlocks")
           : statValue(row, categories, "offensive", "avgThreePointFieldGoalsMade"),
         gp: statValue(row, categories, "general", "gamesPlayed"),
-      })).filter((row: any) => row.playerId && row.value > 0);
+      })).filter((r: any) => r.playerId && r.value > 0);
+
+      // NBA "qualified leader" rule: ≥58 GP for completed seasons.
+      // For in-progress seasons, require ≥40% of max GP in the pool.
+      const maxGp = all.reduce((m: number, r: any) => Math.max(m, r.gp), 0);
+      const threshold = maxGp >= 70 ? 58 : Math.max(1, Math.floor(maxGp * 0.4));
+      let qualified = all.filter((r: any) => r.gp >= threshold);
+      if (qualified.length < 10) qualified = all;
+      const rows = qualified
+        .sort((a: any, b: any) => b.value - a.value)
+        .slice(0, 10)
+        .map((r: any, i: number) => ({ rank: i + 1, ...r }));
       return { ok: true as const, rows };
+
     } catch (err) {
       return { ok: false as const, rows: [], error: (err as Error).message };
     }

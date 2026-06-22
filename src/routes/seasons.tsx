@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CHAMPIONS } from "@/data/champions";
+import { useMemo, useState } from "react";
+import { CHAMPIONS_HISTORY } from "@/data/champions";
 import { LeagueLeadersLive } from "@/components/LeagueLeadersLive";
 
 export const Route = createFileRoute("/seasons")({
@@ -13,41 +14,105 @@ export const Route = createFileRoute("/seasons")({
 });
 
 function SeasonsPage() {
+  const [from, setFrom] = useState<number>(2010);
+  const [to, setTo] = useState<number>(2025);
+  const years = useMemo(() => CHAMPIONS_HISTORY.map((c) => c.season), []);
+  const minYear = Math.min(...years);
+  const maxYear = Math.max(...years);
+
+  const filtered = useMemo(
+    () =>
+      [...CHAMPIONS_HISTORY]
+        .filter((c) => c.season >= Math.min(from, to) && c.season <= Math.max(from, to))
+        .sort((a, b) => b.season - a.season),
+    [from, to],
+  );
+
   return (
     <div className="space-y-8 fade-up">
       <header>
         <div className="eyebrow">Histórico</div>
         <h1 className="font-display text-4xl md:text-5xl">Temporadas</h1>
         <p className="text-muted-foreground mt-2 max-w-xl">
-          Campeões por temporada e líderes estatísticos da temporada atual, atualizados automaticamente.
+          Campeões por temporada e líderes estatísticos, atualizados automaticamente das APIs públicas.
         </p>
       </header>
 
       <LeagueLeadersLive />
 
-      {/* Campeões por temporada */}
       <section>
-        <div className="mb-3">
-          <div className="eyebrow text-amber">Galeria</div>
-          <h2 className="font-display text-2xl">Campeões por temporada</h2>
+        <div className="mb-3 flex items-end justify-between flex-wrap gap-3">
+          <div>
+            <div className="eyebrow text-amber">Galeria</div>
+            <h2 className="font-display text-2xl">Campeões por temporada</h2>
+          </div>
+          <div className="flex items-end gap-2">
+            <label className="flex flex-col gap-1">
+              <span className="eyebrow">De</span>
+              <select
+                value={from}
+                onChange={(e) => setFrom(Number(e.target.value))}
+                className="rounded-md border border-hairline bg-surface-2 px-3 py-2 text-sm"
+              >
+                {years.map((y) => (
+                  <option key={y} value={y}>
+                    {y}–{(y + 1).toString().slice(2)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-1">
+              <span className="eyebrow">Até</span>
+              <select
+                value={to}
+                onChange={(e) => setTo(Number(e.target.value))}
+                className="rounded-md border border-hairline bg-surface-2 px-3 py-2 text-sm"
+              >
+                {years.map((y) => (
+                  <option key={y} value={y}>
+                    {y}–{(y + 1).toString().slice(2)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              onClick={() => {
+                setFrom(minYear);
+                setTo(maxYear);
+              }}
+              className="rounded-md border border-hairline bg-surface-2 px-3 py-2 text-xs font-display uppercase tracking-widest text-muted-foreground hover:text-foreground"
+            >
+              Tudo
+            </button>
+          </div>
         </div>
+
         <div className="mrf-card overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-surface-2 text-left">
               <tr className="text-[11px] font-display uppercase tracking-widest text-muted-foreground">
                 <th className="px-4 py-3">Temporada</th>
                 <th className="px-4 py-3">Campeão</th>
-                <th className="px-4 py-3 hidden md:table-cell">Finals MVP</th>
+                <th className="px-4 py-3">Finals MVP</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-hairline">
-              {[...CHAMPIONS].sort((a, b) => b.season - a.season).map((c) => (
+              {filtered.map((c) => (
                 <tr key={c.season} className="hover:bg-surface-2/60">
-                  <td className="px-4 py-3 font-display text-flame">{c.season}–{(c.season + 1).toString().slice(2)}</td>
+                  <td className="px-4 py-3 font-display text-flame">
+                    {c.season}–{(c.season + 1).toString().slice(2)}
+                  </td>
                   <td className="px-4 py-3">{c.team}</td>
-                  <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{c.finalsMVP ?? "—"}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{c.finalsMVP}</td>
                 </tr>
               ))}
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={3} className="px-4 py-6 text-center text-muted-foreground">
+                    Nenhuma temporada nesse intervalo.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

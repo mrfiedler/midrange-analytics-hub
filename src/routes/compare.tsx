@@ -64,11 +64,25 @@ function ComparePage() {
           <p className="text-muted-foreground mt-2 max-w-xl">Adicione jogadores, veja radar sobreposto e barras comparativas para cada métrica.</p>
         </div>
         <button
-          onClick={() => navigator?.clipboard?.writeText(window.location.href)}
+          onClick={async () => {
+            const url = window.location.href;
+            try {
+              if (navigator.share) {
+                await navigator.share({ title: "Midrange Frenzy — Comparador", url });
+              } else {
+                await navigator.clipboard.writeText(url);
+                const { toast } = await import("sonner");
+                toast.success("Link copiado para a área de transferência");
+              }
+            } catch {
+              /* user cancelled share */
+            }
+          }}
           className="inline-flex items-center gap-1.5 text-xs font-display uppercase tracking-widest text-muted-foreground hover:text-foreground"
         >
           <Share2 className="size-3.5" /> Compartilhar
         </button>
+
       </div>
 
       {/* Slots */}

@@ -187,7 +187,7 @@ function TeamDetail() {
                     <td className="px-4 py-3 text-amber font-display">{p.jersey ?? "—"}</td>
                     <td className="px-4 py-3 font-medium">
                       <div className="flex items-center gap-3">
-                        <PlayerAvatar firstName={p.firstName} lastName={p.lastName} size="sm" />
+                        <PlayerAvatar id={p.id} firstName={p.firstName} lastName={p.lastName} size="sm" />
                         <span>{p.fullName}</span>
                       </div>
                     </td>

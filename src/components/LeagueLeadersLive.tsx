@@ -21,16 +21,19 @@ const CATS: { key: Cat; label: string }[] = [
 
 export function LeagueLeadersLive() {
   const [cat, setCat] = useState<Cat>("PTS");
-  const season = getCurrentSeason();
+  const currentSeason = getCurrentSeason();
+  // Default to last completed season for accurate leaders
+  const [season, setSeason] = useState<number>(currentSeason - 1);
+  const SEASONS = Array.from({ length: 10 }, (_, i) => currentSeason - i);
+
   const leaders = useServerFn(getPublicLeagueLeaders);
 
   const q = useQuery({
     queryKey: ["leaders", season, cat],
     queryFn: async () => {
-      const res = await leaders({ data: { cat } });
+      const res = await leaders({ data: { cat, season } });
       if (!res.ok || res.rows.length === 0) {
-        const empty: LeaderRow[] | null = null;
-        return { source: null as null | "espn-public", available: false, data: empty };
+        return { source: null as null | "espn-public", available: false, data: null as LeaderRow[] | null };
       }
       return { source: "espn-public" as const, available: true, data: res.rows };
     },
@@ -41,23 +44,34 @@ export function LeagueLeadersLive() {
     <section>
       <div className="mb-3 flex items-end justify-between gap-3 flex-wrap">
         <div>
-          <div className="eyebrow">Temporada {season}–{String(season + 1).slice(2)}</div>
+          <div className="eyebrow">Líderes — Temporada {season}–{String(season + 1).slice(2)}</div>
           <h2 className="font-display text-2xl md:text-3xl">Líderes da liga</h2>
         </div>
-        <div className="flex gap-1 flex-wrap">
-          {CATS.map((c) => (
-            <button
-              key={c.key}
-              onClick={() => setCat(c.key)}
-              className={`text-[11px] font-display uppercase tracking-widest px-2.5 py-1 rounded border transition-colors ${
-                cat === c.key
-                  ? "border-flame/70 bg-flame/15 text-flame"
-                  : "border-hairline text-muted-foreground hover:border-flame/40"
-              }`}
-            >
-              {c.label}
-            </button>
-          ))}
+        <div className="flex items-end gap-2 flex-wrap">
+          <select
+            value={season}
+            onChange={(e) => setSeason(Number(e.target.value))}
+            className="rounded-md border border-hairline bg-surface-2 px-3 py-2 text-sm"
+          >
+            {SEASONS.map((y) => (
+              <option key={y} value={y}>{y}–{String(y + 1).slice(2)}</option>
+            ))}
+          </select>
+          <div className="flex gap-1 flex-wrap">
+            {CATS.map((c) => (
+              <button
+                key={c.key}
+                onClick={() => setCat(c.key)}
+                className={`text-[11px] font-display uppercase tracking-widest px-2.5 py-1 rounded border transition-colors ${
+                  cat === c.key
+                    ? "border-flame/70 bg-flame/15 text-flame"
+                    : "border-hairline text-muted-foreground hover:border-flame/40"
+                }`}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -66,7 +80,7 @@ export function LeagueLeadersLive() {
           <Loader2 className="size-4 animate-spin text-flame" /> Buscando líderes…
         </div>
       ) : !q.data?.available || !q.data.data ? (
-        <UnavailableCard notice="Líderes da liga indisponíveis no momento. Tente em alguns minutos." />
+        <UnavailableCard notice="Líderes indisponíveis para essa temporada no momento." />
       ) : (
         <>
           <div className="mrf-card overflow-hidden">
@@ -75,7 +89,7 @@ export function LeagueLeadersLive() {
                 <tr className="text-[11px] font-display uppercase tracking-widest text-muted-foreground">
                   <th className="px-4 py-3">#</th>
                   <th className="px-4 py-3">Jogador</th>
-                  <th className="px-4 py-3 hidden sm:table-cell">Time</th>
+                  <th className="px-4 py-3">Time</th>
                   <th className="px-4 py-3 text-right">{cat}</th>
                   <th className="px-4 py-3 text-right hidden md:table-cell">JG</th>
                 </tr>
@@ -89,7 +103,7 @@ export function LeagueLeadersLive() {
                         {p.playerName}
                       </Link>
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell">{p.teamAbbr}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{p.teamAbbr}</td>
                     <td className="px-4 py-3 text-right tabular-nums font-display text-amber">{p.value.toFixed(1)}</td>
                     <td className="px-4 py-3 text-right tabular-nums text-muted-foreground hidden md:table-cell">{p.gp}</td>
                   </tr>

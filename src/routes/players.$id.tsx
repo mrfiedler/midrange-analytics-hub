@@ -7,10 +7,9 @@ import { getPlayerProfile } from "@/lib/balldontlie.functions";
 import { StatCard } from "@/components/StatCard";
 import { MetricTooltip } from "@/components/MetricTooltip";
 import { useMode } from "@/lib/mode-context";
-import { PlayerRadar } from "@/components/charts/PlayerRadar";
-import { EvolutionChart } from "@/components/charts/EvolutionChart";
-import { scoreMetric } from "@/lib/score-metric";
 import { PlayerAvatar } from "@/components/players/PlayerAvatar";
+
+
 
 export const Route = createFileRoute("/players/$id")({
   head: ({ params }) => ({
@@ -60,26 +59,9 @@ function PlayerProfile() {
   const { player, averages } = q.data;
   const hasStats = !!averages;
 
-  // Fake evolution series (last 5 seasons) — uses current season's PPG as anchor when available
-  const anchor = averages?.pts ?? 18;
-  const evolution = SEASONS.map((s, i) => ({
-    season: `${s}`,
-    PPG: Math.max(4, +(anchor * (0.78 + i * 0.06)).toFixed(1)),
-    APG: +((averages?.ast ?? 3) * (0.8 + i * 0.05)).toFixed(1),
-    RPG: +((averages?.reb ?? 4) * (0.85 + i * 0.04)).toFixed(1),
-  })).reverse();
+  
 
-  const radarValues = averages
-    ? [
-        scoreMetric("PPG", averages.pts),
-        scoreMetric("APG", averages.ast),
-        scoreMetric("RPG", averages.reb),
-        scoreMetric("SPG", averages.stl),
-        scoreMetric("BPG", averages.blk),
-        scoreMetric("FG%", averages.fg_pct),
-        scoreMetric("3P%", averages.fg3_pct),
-      ]
-    : [0, 0, 0, 0, 0, 0, 0];
+
 
   return (
     <div className="space-y-8 fade-up">
@@ -92,7 +74,7 @@ function PlayerProfile() {
         <div className="absolute -right-12 -top-12 size-72 rounded-full bg-flame/10 blur-3xl pointer-events-none" />
         <div className="absolute -left-20 bottom-0 size-56 rounded-full bg-accent/15 blur-3xl pointer-events-none" />
         <div className="relative flex flex-col md:flex-row md:items-end gap-6">
-          <PlayerAvatar firstName={player.firstName} lastName={player.lastName} size="xl" />
+          <PlayerAvatar id={player.id} firstName={player.firstName} lastName={player.lastName} size="xl" />
           <div className="flex-1 min-w-0">
             <div className="eyebrow text-flame">{player.team?.abbr ?? "Free agent"} · {player.position}</div>
             <h1 className="font-display text-4xl md:text-6xl leading-none mt-1">{player.fullName}</h1>
@@ -165,33 +147,8 @@ function PlayerProfile() {
             )}
           </section>
 
-          {/* Charts */}
-          <section className="grid gap-6 lg:grid-cols-2">
-            <div className="mrf-card p-5">
-              <div className="eyebrow">Perfil completo</div>
-              <h3 className="font-display text-xl mb-2">Radar do jogador</h3>
-              <PlayerRadar
-                axes={["PPG", "APG", "RPG", "SPG", "BPG", "FG%", "3P%"]}
-                series={[{ name: player.lastName, color: "oklch(0.62 0.23 28)", values: radarValues }]}
-              />
-            </div>
-            <div className="mrf-card p-5">
-              <div className="eyebrow">Evolução estimada</div>
-              <h3 className="font-display text-xl mb-2">5 temporadas (ilustrativo)</h3>
-              <EvolutionChart
-                data={evolution}
-                xKey="season"
-                series={[
-                  { name: "PPG", dataKey: "PPG", color: "oklch(0.62 0.23 28)" },
-                  { name: "APG", dataKey: "APG", color: "oklch(0.45 0.18 305)" },
-                  { name: "RPG", dataKey: "RPG", color: "oklch(0.78 0.16 70)" },
-                ]}
-              />
-              <p className="text-[11px] text-muted-foreground mt-2">
-                Curva ilustrativa baseada na temporada selecionada — para histórico exato use o seletor de temporada.
-              </p>
-            </div>
-          </section>
+
+
 
           {/* Raw stat table */}
           <section>
