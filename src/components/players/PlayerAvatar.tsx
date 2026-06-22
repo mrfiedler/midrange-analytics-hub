@@ -75,27 +75,33 @@ export function lookupNbaId(firstName: string, lastName: string): number | null 
   return NBA_ID_MAP[key] ?? null;
 }
 
-export function PlayerAvatar({ firstName, lastName, size = "sm" }: Props) {
-  const [failed, setFailed] = useState(false);
+export function PlayerAvatar({ id, firstName, lastName, size = "sm" }: Props) {
+  const [stage, setStage] = useState<0 | 1 | 2>(0);
   const initials = `${firstName?.[0] ?? ""}${lastName?.[0] ?? ""}`.toUpperCase();
   const nbaId = lookupNbaId(firstName, lastName);
   const cls = `${SIZES[size]} rounded-full grid place-items-center shrink-0 overflow-hidden`;
 
-  if (!nbaId || failed) {
-    return (
-      <div className={`${cls} flame-bg text-white font-display`}>{initials}</div>
-    );
+  // Source chain: NBA CDN (mapped) → ESPN CDN (by id) → initials
+  const sources: string[] = [];
+  if (nbaId) sources.push(`https://cdn.nba.com/headshots/nba/latest/1040x760/${nbaId}.png`);
+  if (id) sources.push(`https://a.espncdn.com/i/headshots/nba/players/full/${id}.png`);
+
+  const src = sources[stage];
+
+  if (!src) {
+    return <div className={`${cls} flame-bg text-white font-display`}>{initials}</div>;
   }
 
   return (
     <div className={`${cls} bg-surface-2`}>
       <img
-        src={`https://cdn.nba.com/headshots/nba/latest/1040x760/${nbaId}.png`}
+        src={src}
         alt={`${firstName} ${lastName}`}
         loading="lazy"
-        onError={() => setFailed(true)}
+        onError={() => setStage((s) => (s + 1) as 0 | 1 | 2)}
         className="size-full object-cover"
       />
     </div>
   );
 }
+
