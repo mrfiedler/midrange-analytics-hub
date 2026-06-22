@@ -59,26 +59,9 @@ function PlayerProfile() {
   const { player, averages } = q.data;
   const hasStats = !!averages;
 
-  // Fake evolution series (last 5 seasons) — uses current season's PPG as anchor when available
-  const anchor = averages?.pts ?? 18;
-  const evolution = SEASONS.map((s, i) => ({
-    season: `${s}`,
-    PPG: Math.max(4, +(anchor * (0.78 + i * 0.06)).toFixed(1)),
-    APG: +((averages?.ast ?? 3) * (0.8 + i * 0.05)).toFixed(1),
-    RPG: +((averages?.reb ?? 4) * (0.85 + i * 0.04)).toFixed(1),
-  })).reverse();
+  void scoreMetric;
 
-  const radarValues = averages
-    ? [
-        scoreMetric("PPG", averages.pts),
-        scoreMetric("APG", averages.ast),
-        scoreMetric("RPG", averages.reb),
-        scoreMetric("SPG", averages.stl),
-        scoreMetric("BPG", averages.blk),
-        scoreMetric("FG%", averages.fg_pct),
-        scoreMetric("3P%", averages.fg3_pct),
-      ]
-    : [0, 0, 0, 0, 0, 0, 0];
+
 
   return (
     <div className="space-y-8 fade-up">
