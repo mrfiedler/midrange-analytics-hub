@@ -59,7 +59,7 @@ function PlayerProfile() {
   const { player, averages } = q.data;
   const hasStats = !!averages;
 
-  void scoreMetric;
+  
 
 
 
