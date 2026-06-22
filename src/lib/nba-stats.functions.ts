@@ -26,7 +26,9 @@ const ProxyInput = z.object({
 
 const LeaderInput = z.object({
   cat: z.enum(["PTS", "REB", "AST", "STL", "BLK", "FG3M"]),
+  season: z.number().int().min(2002).max(2100).optional(),
 });
+
 
 const LEADER_SORT: Record<z.infer<typeof LeaderInput>["cat"], string> = {
   PTS: "offensive.avgPoints:desc",
