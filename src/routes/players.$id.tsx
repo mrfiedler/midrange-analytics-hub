@@ -7,10 +7,9 @@ import { getPlayerProfile } from "@/lib/balldontlie.functions";
 import { StatCard } from "@/components/StatCard";
 import { MetricTooltip } from "@/components/MetricTooltip";
 import { useMode } from "@/lib/mode-context";
-import { PlayerRadar } from "@/components/charts/PlayerRadar";
-import { EvolutionChart } from "@/components/charts/EvolutionChart";
 import { scoreMetric } from "@/lib/score-metric";
 import { PlayerAvatar } from "@/components/players/PlayerAvatar";
+
 
 export const Route = createFileRoute("/players/$id")({
   head: ({ params }) => ({
