@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { cached } from "@/lib/server-cache";
 
 const NBA_HEADERS = {
   Host: "stats.nba.com",
@@ -86,17 +87,19 @@ export const getPublicLeagueLeaders = createServerFn({ method: "GET" })
       url.searchParams.set("page", "1");
       url.searchParams.set("limit", "60");
       url.searchParams.set("sort", LEADER_SORT[data.cat]);
+      url.searchParams.set("seasontype", "2");
       // ESPN season param uses END year: season=2025 ⇒ 2024–25
       if (data.season) url.searchParams.set("season", String(data.season + 1));
-      const res = await fetch(url.toString(), { headers: ESPN_HEADERS, signal: AbortSignal.timeout(10_000) });
-
-      if (!res.ok) return { ok: false as const, rows: [], error: `public leaders ${res.status}` };
-      const json = await res.json();
+      const json = await cached(`espn:leaders:${data.season ?? "current"}:${data.cat}`, 15 * 60_000, async () => {
+        const res = await fetch(url.toString(), { headers: ESPN_HEADERS, signal: AbortSignal.timeout(10_000) });
+        if (!res.ok) throw new Error(`public leaders ${res.status}`);
+        return res.json();
+      });
       const categories = json.categories ?? [];
       const all = (json.athletes ?? []).map((row: any) => ({
         playerId: Number(row.athlete?.id ?? 0),
         playerName: row.athlete?.displayName ?? "—",
-        teamAbbr: row.athlete?.team?.abbreviation ?? row.athlete?.teamShortName ?? "—",
+        teamAbbr: row.athlete?.teams?.[0]?.abbreviation ?? row.athlete?.teamShortName ?? "—",
         value: data.cat === "PTS" ? statValue(row, categories, "offensive", "avgPoints")
           : data.cat === "AST" ? statValue(row, categories, "offensive", "avgAssists")
           : data.cat === "REB" ? statValue(row, categories, "general", "avgRebounds")

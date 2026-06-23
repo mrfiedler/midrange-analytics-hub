@@ -9,6 +9,11 @@ const ESPN_HEADERS = {
   Accept: "application/json, text/plain, */*",
 } as const;
 
+const BBR_HEADERS = {
+  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
+  Accept: "text/html,application/xhtml+xml",
+} as const;
+
 const BDL_TO_ESPN_TEAM: Record<number, { id: number; abbr: string }> = {
   1: { id: 1, abbr: "atl" }, 2: { id: 2, abbr: "bos" }, 3: { id: 17, abbr: "bkn" }, 4: { id: 30, abbr: "cha" },
   5: { id: 4, abbr: "chi" }, 6: { id: 5, abbr: "cle" }, 7: { id: 6, abbr: "dal" }, 8: { id: 7, abbr: "den" },
@@ -20,6 +25,12 @@ const BDL_TO_ESPN_TEAM: Record<number, { id: number; abbr: string }> = {
   29: { id: 26, abbr: "utah" }, 30: { id: 27, abbr: "wsh" },
 };
 const ESPN_TO_BDL_TEAM = Object.fromEntries(Object.entries(BDL_TO_ESPN_TEAM).map(([bdl, espn]) => [String(espn.id), Number(bdl)]));
+
+const BDL_TO_BBR_TEAM: Record<number, string> = {
+  1: "ATL", 2: "BOS", 3: "BRK", 4: "CHO", 5: "CHI", 6: "CLE", 7: "DAL", 8: "DEN", 9: "DET", 10: "GSW",
+  11: "HOU", 12: "IND", 13: "LAC", 14: "LAL", 15: "MEM", 16: "MIA", 17: "MIL", 18: "MIN", 19: "NOP", 20: "NYK",
+  21: "OKC", 22: "ORL", 23: "PHI", 24: "PHO", 25: "POR", 26: "SAC", 27: "SAS", 28: "TOR", 29: "UTA", 30: "WAS",
+};
 
 async function fetchJson<T>(url: string, ttlMs = 30 * 60_000): Promise<T> {
   return cached(`public:${url}`, ttlMs, async () => {
@@ -68,6 +79,87 @@ function toAverageRow(json: any) {
     dreb: s.avgDefensiveRebounds || (gp ? (s.defensiveRebounds || 0) / gp : 0),
     season: json?.season?.year ? Number(json.season.year) - 1 : undefined,
   };
+}
+
+function decodeHtml(value: string) {
+  return value
+    .replace(/&amp;/g, "&")
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&nbsp;/g, " ")
+    .replace(/&eacute;/g, "é")
+    .replace(/&ouml;/g, "ö")
+    .replace(/&uuml;/g, "ü")
+    .replace(/&iacute;/g, "í")
+    .replace(/&aacute;/g, "á");
+}
+
+function cell(row: string, stat: string) {
+  const match = row.match(new RegExp(`data-stat="${stat}"[^>]*>([\\s\\S]*?)<\\/(?:td|th)>`));
+  return match ? decodeHtml(match[1].replace(/<[^>]*>/g, "").trim()) : "";
+}
+
+function num(value: string) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+}
+
+async function getBasketballReferenceRoster(teamId: number, season: number) {
+  const abbr = BDL_TO_BBR_TEAM[teamId];
+  if (!abbr) return null;
+  const endYear = season + 1;
+  const html = await cached(`bbr:team:${abbr}:${endYear}`, 12 * 60 * 60_000, async () => {
+    const res = await fetch(`https://www.basketball-reference.com/teams/${abbr}/${endYear}.html`, {
+      headers: BBR_HEADERS,
+      signal: AbortSignal.timeout(12_000),
+    });
+    if (!res.ok) throw new Error(`basketball-reference ${res.status}`);
+    return res.text();
+  });
+  const cleaned = html.replace(/<!--/g, "").replace(/-->/g, "");
+  const table = cleaned.match(/<table[^>]*id="per_game_stats"[\s\S]*?<\/table>/)?.[0];
+  if (!table) return null;
+  const rows = [...table.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/g)]
+    .map((m) => m[1])
+    .filter((row) => row.includes('data-stat="name_display"'));
+  const players = rows.map((row, i) => {
+    const name = cell(row, "name_display");
+    const id = Number(`9${teamId}${endYear}${String(i + 1).padStart(2, "0")}`);
+    return {
+      id,
+      firstName: name.split(" ")[0] ?? "",
+      lastName: name.split(" ").slice(1).join(" "),
+      fullName: name,
+      position: cell(row, "pos") || "—",
+      height: null,
+      jersey: null,
+      average: {
+        player_id: id,
+        games_played: num(cell(row, "games")),
+        min: cell(row, "mp_per_g") || "0.0",
+        pts: num(cell(row, "pts_per_g")),
+        reb: num(cell(row, "trb_per_g")),
+        ast: num(cell(row, "ast_per_g")),
+        stl: num(cell(row, "stl_per_g")),
+        blk: num(cell(row, "blk_per_g")),
+        turnover: num(cell(row, "tov_per_g")),
+        pf: num(cell(row, "pf_per_g")),
+        fgm: num(cell(row, "fg_per_g")),
+        fga: num(cell(row, "fga_per_g")),
+        fg_pct: num(cell(row, "fg_pct")),
+        fg3m: num(cell(row, "fg3_per_g")),
+        fg3a: num(cell(row, "fg3a_per_g")),
+        fg3_pct: num(cell(row, "fg3_pct")),
+        ftm: num(cell(row, "ft_per_g")),
+        fta: num(cell(row, "fta_per_g")),
+        ft_pct: num(cell(row, "ft_pct")),
+        oreb: num(cell(row, "orb_per_g")),
+        dreb: num(cell(row, "drb_per_g")),
+        season,
+      },
+    };
+  }).filter((p) => p.fullName && p.fullName !== "Player");
+  return players.length ? players : null;
 }
 
 async function getEspnPlayerStats(id: number, season: number) {
@@ -276,8 +368,12 @@ export const getTeamRoster = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     try {
       const espn = BDL_TO_ESPN_TEAM[data.teamId];
+      const season = data.season ?? 2025;
+      const bbrRoster = await getBasketballReferenceRoster(data.teamId, season).catch(() => null);
+      if (bbrRoster?.length) {
+        return { ok: true as const, players: bbrRoster };
+      }
       if (espn) {
-        const season = data.season ?? 2024;
         const url = season >= 2025
           ? `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/${espn.abbr}/roster`
           : `https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/${espnSeason(season)}/teams/${espn.id}/athletes?limit=50`;
@@ -341,6 +437,24 @@ export const getSeasonAveragesBulk = createServerFn({ method: "GET" })
   .inputValidator((d) => BulkAvgInput.parse(d))
   .handler(async ({ data }) => {
     try {
+      const embeddedRows = data.playerIds
+        .filter((id) => String(id).startsWith("9"))
+        .map((id) => {
+          const raw = String(id);
+          const teamId = Number(raw.slice(1, raw.length - 6));
+          const endYear = Number(raw.slice(-6, -2));
+          return { id, teamId, season: endYear - 1 };
+        });
+      if (embeddedRows.length > 0) {
+        const groups = await Promise.all(
+          [...new Map(embeddedRows.map((r) => [`${r.teamId}:${r.season}`, r])).values()]
+            .map((r) => getBasketballReferenceRoster(r.teamId, r.season).catch(() => null)),
+        );
+        const averages = groups.flatMap((players) => players?.map((p) => p.average) ?? [])
+          .filter((avg) => data.playerIds.includes(avg.player_id));
+        if (averages.length > 0) return { ok: true as const, averages };
+      }
+
       const rows = (await Promise.all(data.playerIds.map((id) => getEspnPlayerStats(id, data.season).catch(() => null))))
         .map((row, i) => row ? { ...row, player_id: data.playerIds[i] } : null)
         .filter(Boolean);
