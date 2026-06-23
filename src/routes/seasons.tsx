@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { CHAMPIONS_HISTORY } from "@/data/champions";
 import { LeagueLeadersLive } from "@/components/LeagueLeadersLive";
+import { getCurrentSeason } from "@/lib/season";
 
 export const Route = createFileRoute("/seasons")({
   head: () => ({
@@ -14,11 +15,13 @@ export const Route = createFileRoute("/seasons")({
 });
 
 function SeasonsPage() {
-  const [from, setFrom] = useState<number>(2010);
-  const [to, setTo] = useState<number>(2025);
+  const currentSeason = getCurrentSeason();
   const years = useMemo(() => CHAMPIONS_HISTORY.map((c) => c.season), []);
   const minYear = Math.min(...years);
   const maxYear = Math.max(...years);
+  const latestChampionSeason = Math.min(currentSeason, maxYear);
+  const [from, setFrom] = useState<number>(latestChampionSeason);
+  const [to, setTo] = useState<number>(latestChampionSeason);
 
   const filtered = useMemo(
     () =>

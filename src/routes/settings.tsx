@@ -23,7 +23,7 @@ function SettingsPage() {
       <section className="mrf-card p-5">
         <div className="eyebrow">Exibição</div>
         <h2 className="font-display text-xl mt-1">Nível de detalhe</h2>
-        <p className="text-sm text-muted-foreground mt-1">Newbie mostra explicações simples. Pro libera métricas avançadas e fórmulas.</p>
+        <p className="text-sm text-muted-foreground mt-1">Newbie mostra o essencial. Pro mantém essas métricas e adiciona as avançadas.</p>
         <div className="mt-4 grid grid-cols-2 gap-2">
           {(["newbie", "pro"] as const).map((m) => (
             <button
@@ -35,7 +35,7 @@ function SettingsPage() {
               <div className="text-xs text-muted-foreground mt-1">
                 {m === "newbie"
                   ? "Métricas básicas, explicações curtas e tooltips amigáveis."
-                  : "Métricas avançadas (PER, TS%, BPM, VORP) e fórmulas completas."}
+                  : "Todas as métricas do Newbie, mais métricas avançadas e fórmulas completas."}
               </div>
             </button>
           ))}

@@ -20,3 +20,9 @@ export function formatSeason(startYear: number): string {
   const end = (startYear + 1).toString().slice(2);
   return `${startYear}–${end}`;
 }
+
+export function getLatestListedSeason(now: Date = new Date()): number {
+  const year = now.getUTCFullYear();
+  const month = now.getUTCMonth() + 1;
+  return month >= 7 ? year : year - 1;
+}
