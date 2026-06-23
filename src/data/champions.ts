@@ -20,21 +20,6 @@ export interface Champion {
  */
 export const CHAMPIONS: Champion[] = [
   {
-    season: 2025,
-    seasonLabel: "2025–26",
-    team: "New York Knicks",
-    teamAbbr: "NYK",
-    teamColors: { primary: "#006BB6", secondary: "#F58426" },
-    finalsMVP: "Jalen Brunson",
-    seriesResult: "4-1 vs San Antonio Spurs",
-    record: "58–24",
-    ppg: 116.8,
-    ortg: 119.2,
-    drtg: 110.4,
-    netRtg: 8.8,
-    leadingScorer: { name: "Jalen Brunson", ppg: 28.6 },
-  },
-  {
     season: 2024,
     seasonLabel: "2024–25",
     team: "Oklahoma City Thunder",
@@ -74,7 +59,6 @@ export interface ChampionRecord {
 
 /** Compact champions history (season start year). */
 export const CHAMPIONS_HISTORY: ChampionRecord[] = [
-  { season: 2025, team: "New York Knicks", finalsMVP: "Jalen Brunson" },
   { season: 2024, team: "Oklahoma City Thunder", finalsMVP: "Shai Gilgeous-Alexander" },
   { season: 2023, team: "Boston Celtics", finalsMVP: "Jaylen Brown" },
   { season: 2022, team: "Denver Nuggets", finalsMVP: "Nikola Jokić" },
