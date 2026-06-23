@@ -22,8 +22,7 @@ const CATS: { key: Cat; label: string }[] = [
 export function LeagueLeadersLive() {
   const [cat, setCat] = useState<Cat>("PTS");
   const currentSeason = getCurrentSeason();
-  // Default to last completed season for accurate leaders
-  const [season, setSeason] = useState<number>(currentSeason - 1);
+  const [season, setSeason] = useState<number>(currentSeason);
   const SEASONS = Array.from({ length: 10 }, (_, i) => currentSeason - i);
 
   const leaders = useServerFn(getPublicLeagueLeaders);
