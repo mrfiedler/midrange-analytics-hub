@@ -16,11 +16,12 @@ export const Route = createFileRoute("/seasons")({
 
 function SeasonsPage() {
   const currentSeason = getCurrentSeason();
-  const [from, setFrom] = useState<number>(currentSeason);
-  const [to, setTo] = useState<number>(currentSeason);
   const years = useMemo(() => CHAMPIONS_HISTORY.map((c) => c.season), []);
   const minYear = Math.min(...years);
   const maxYear = Math.max(...years);
+  const latestChampionSeason = Math.min(currentSeason, maxYear);
+  const [from, setFrom] = useState<number>(latestChampionSeason);
+  const [to, setTo] = useState<number>(latestChampionSeason);
 
   const filtered = useMemo(
     () =>
