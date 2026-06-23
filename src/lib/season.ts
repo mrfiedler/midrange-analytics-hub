@@ -1,7 +1,7 @@
 /**
  * NBA season helpers.
  * NBA season runs from October to June.
- * - Months Jul-Sep (offseason): return the upcoming/latest listed season.
+ * - Months Jul-Sep (offseason): return previous season (the one that just ended).
  * - Months Oct-Dec: return the current calendar year.
  * - Months Jan-Jun: return previous calendar year (season started in the previous Oct).
  *
@@ -11,8 +11,9 @@
 export function getCurrentSeason(now: Date = new Date()): number {
   const year = now.getUTCFullYear();
   const month = now.getUTCMonth() + 1; // 1-12
-  if (month >= 7) return year; // Jul-Dec: next/latest listed season (draft/free agency onward)
-  return year - 1; // Jan-Jun: season started in the previous calendar year
+  if (month >= 10) return year; // Oct-Dec: current year season
+  if (month <= 6) return year - 1; // Jan-Jun: still last fall's season
+  return year - 1; // Jul-Sep offseason: the season that just ended
 }
 
 export function formatSeason(startYear: number): string {
