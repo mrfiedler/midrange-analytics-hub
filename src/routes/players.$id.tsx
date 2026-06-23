@@ -135,14 +135,18 @@ function PlayerProfile() {
               </div>
             ) : (
               <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                <StatCard abbr="PPG" value={averages.pts.toFixed(1)} />
+                <StatCard abbr="RPG" value={averages.reb.toFixed(1)} accent="court" />
+                <StatCard abbr="APG" value={averages.ast.toFixed(1)} accent="amber" />
+                <StatCard abbr="SPG" value={averages.stl.toFixed(1)} />
+                <StatCard abbr="BPG" value={averages.blk.toFixed(1)} accent="court" />
+                <StatCard abbr="FG%" value={`${(averages.fg_pct * 100).toFixed(1)}%`} accent="amber" />
+                <StatCard abbr="3P%" value={`${(averages.fg3_pct * 100).toFixed(1)}%`} />
+                <StatCard abbr="FT%" value={`${(averages.ft_pct * 100).toFixed(1)}%`} accent="court" />
                 <StatCard abbr="eFG%" value={`${(((averages.fgm + 0.5 * averages.fg3m) / Math.max(averages.fga, 0.1)) * 100).toFixed(1)}%`} />
                 <StatCard abbr="TS%" value={`${((averages.pts / Math.max(2 * (averages.fga + 0.44 * averages.fta), 0.1)) * 100).toFixed(1)}%`} accent="court" />
-                <StatCard abbr="USG%" value={"—"} hint="Usage não disponível na API" accent="amber" />
-                <StatCard abbr="PPG" value={averages.pts.toFixed(1)} />
-                <StatCard abbr="RPG" value={averages.reb.toFixed(1)} accent="amber" />
-                <StatCard abbr="APG" value={averages.ast.toFixed(1)} accent="court" />
-                <StatCard abbr="TOV%" value={averages.turnover.toFixed(1)} hint="Turnovers por jogo" />
                 <StatCard abbr="PER" value={"—"} hint="Indisponível na API pública" accent="amber" />
+                <StatCard abbr="TOV" value={averages.turnover.toFixed(1)} hint="Turnovers por jogo" />
               </div>
             )}
           </section>
