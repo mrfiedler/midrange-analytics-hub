@@ -10,7 +10,7 @@ import { PlayerRadar } from "@/components/charts/PlayerRadar";
 import { teamLogoUrl } from "@/lib/nba-logos";
 import { getTeamRoster, getSeasonAveragesBulk } from "@/lib/balldontlie.functions";
 import { scoreMetric } from "@/lib/score-metric";
-import { formatSeason } from "@/lib/season";
+import { formatSeason, getCurrentSeason } from "@/lib/season";
 
 export const Route = createFileRoute("/lineups")({
   head: () => ({
@@ -22,7 +22,8 @@ export const Route = createFileRoute("/lineups")({
   component: LineupsPage,
 });
 
-const SEASON_YEARS = Array.from({ length: 2025 - 1979 + 1 }, (_, i) => 2025 - i);
+const CURRENT_SEASON = getCurrentSeason();
+const SEASON_YEARS = Array.from({ length: CURRENT_SEASON - 1979 + 1 }, (_, i) => CURRENT_SEASON - i);
 const RADAR_AXES = ["PPG", "RPG", "APG", "FG%", "3P%"] as const;
 const SLOT_COLORS = ["oklch(0.62 0.23 28)", "oklch(0.78 0.13 235)"];
 
@@ -39,7 +40,7 @@ function LineupsPage() {
   const [selected, setSelected] = useState<string[]>([]);
   const [slots, setSlots] = useState<CustomSlot[]>([]);
   const [pickTeamId, setPickTeamId] = useState<number>(20); // NYK default
-  const [pickSeason, setPickSeason] = useState<number>(2023);
+  const [pickSeason, setPickSeason] = useState<number>(CURRENT_SEASON);
 
   const fetchRoster = useServerFn(getTeamRoster);
   const fetchAverages = useServerFn(getSeasonAveragesBulk);
