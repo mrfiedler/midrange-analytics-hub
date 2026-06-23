@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { cached } from "@/lib/server-cache";
+import { getCurrentSeason } from "@/lib/season";
 
 const BASE = "https://api.balldontlie.io/v1";
 
@@ -369,7 +370,7 @@ export const getTeamRoster = createServerFn({ method: "GET" })
     try {
       const espn = BDL_TO_ESPN_TEAM[data.teamId];
       const season = data.season ?? 2025;
-      const bbrRoster = await getBasketballReferenceRoster(data.teamId, season).catch(() => null);
+      const bbrRoster = season < getCurrentSeason() ? await getBasketballReferenceRoster(data.teamId, season).catch(() => null) : null;
       if (bbrRoster?.length) {
         return { ok: true as const, players: bbrRoster };
       }
