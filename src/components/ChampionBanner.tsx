@@ -1,15 +1,45 @@
-import { useState } from "react";
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
 import { Trophy } from "lucide-react";
 import { CHAMPIONS, getChampionForSeason, type Champion } from "@/data/champions";
 import { teamLogoUrl } from "@/lib/nba-logos";
 import { getCurrentSeason } from "@/lib/season";
+import { getChampionMetrics } from "@/lib/nba-stats.functions";
 
 export function ChampionBanner() {
   const fallbackSeason = getCurrentSeason();
-  const [champ] = useState<Champion>(
+  const baseChampion = useMemo<Champion>(() => (
     getChampionForSeason(fallbackSeason) ?? CHAMPIONS[0]
-  );
+  ), [fallbackSeason]);
+  const fetchMetrics = useServerFn(getChampionMetrics);
+
+  const metrics = useQuery({
+    queryKey: ["champion-metrics", baseChampion.season, baseChampion.teamAbbr],
+    queryFn: () => fetchMetrics({
+      data: {
+        season: baseChampion.season,
+        teamAbbr: baseChampion.teamAbbr,
+        teamName: baseChampion.team,
+      },
+    }),
+    staleTime: 30 * 60_000,
+  });
+
+  const champ = useMemo<Champion>(() => {
+    const data = metrics.data;
+    if (!data?.ok) return baseChampion;
+    return {
+      ...baseChampion,
+      record: data.record ?? baseChampion.record,
+      ppg: data.ppg ?? baseChampion.ppg,
+      ortg: data.ortg ?? baseChampion.ortg,
+      drtg: data.drtg ?? baseChampion.drtg,
+      netRtg: data.netRtg ?? baseChampion.netRtg,
+      leadingScorer: data.leadingScorer ?? baseChampion.leadingScorer,
+    };
+  }, [baseChampion, metrics.data]);
 
   const logo = teamLogoUrl(champ.teamAbbr);
 
@@ -36,7 +66,7 @@ export function ChampionBanner() {
           </div>
           <h2 className="font-display text-3xl md:text-5xl leading-tight mt-1">{champ.team}</h2>
           <div className="mt-2 text-sm text-muted-foreground">
-            MVP das Finals: <span className="text-foreground font-medium">{champ.finalsMVP}</span> · {champ.seriesResult}
+            {champ.seriesResult} · métricas atualizadas por bases públicas
           </div>
           <div className="mt-4 grid grid-cols-2 sm:grid-cols-5 gap-2 max-w-xl">
             <Stat label="Record" value={champ.record} />
