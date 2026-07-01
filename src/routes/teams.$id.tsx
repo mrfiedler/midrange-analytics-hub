@@ -16,7 +16,7 @@ import { PlayerAvatar } from "@/components/players/PlayerAvatar";
 export const Route = createFileRoute("/teams/$id")({
   head: ({ params }) => ({
     meta: [
-      { title: `Time #${params.id} — Midrange Frenzy` },
+      { title: `Time #${params.id} - Midrange Frenzy` },
       { name: "description", content: "Dashboard do time com métricas coletivas, ranking ofensivo e defensivo e elenco." },
     ],
   }),
@@ -184,7 +184,7 @@ function TeamDetail() {
               <tbody className="divide-y divide-hairline">
                 {roster.map((p: { id: number; firstName: string; lastName: string; fullName: string; position: string; height?: string | null; jersey?: string | null }) => (
                   <tr key={p.id} className="hover:bg-surface-2/60">
-                    <td className="px-4 py-3 text-amber font-display">{p.jersey ?? "—"}</td>
+                    <td className="px-4 py-3 text-amber font-display">{p.jersey ?? "-"}</td>
                     <td className="px-4 py-3 font-medium">
                       <div className="flex items-center gap-3">
                         <PlayerAvatar id={p.id} firstName={p.firstName} lastName={p.lastName} size="sm" />
@@ -192,7 +192,7 @@ function TeamDetail() {
                       </div>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">{p.position}</td>
-                    <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell">{p.height ?? "—"}</td>
+                    <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell">{p.height ?? "-"}</td>
                     <td className="px-4 py-3 text-right">
                       <Link to="/players/$id" params={{ id: String(p.id) }} className="text-flame text-xs hover:underline">Ver →</Link>
                     </td>

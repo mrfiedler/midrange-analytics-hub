@@ -51,8 +51,8 @@ export async function fetchLeagueLeaders(
     const rows: LeaderRow[] = rowSet.slice(0, 25).map((r) => ({
       rank: r[idx("RANK")] ?? 0,
       playerId: r[idx("PLAYER_ID")] ?? 0,
-      playerName: r[idx("PLAYER")] ?? "—",
-      teamAbbr: r[idx("TEAM")] ?? "—",
+      playerName: r[idx("PLAYER")] ?? "-",
+      teamAbbr: r[idx("TEAM")] ?? "-",
       value: Number(r[idx(statCategory)] ?? 0),
       gp: Number(r[idx("GP")] ?? 0),
     }));
@@ -63,7 +63,7 @@ export async function fetchLeagueLeaders(
     source: null,
     available: false,
     data: null,
-    notice: "Líderes oficiais indisponíveis — stats.nba.com bloqueou esta requisição.",
+    notice: "Líderes oficiais indisponíveis - stats.nba.com bloqueou esta requisição.",
   };
 }
 
@@ -115,6 +115,6 @@ export async function fetchStandings(season: number): Promise<SourcedResult<Stan
     source: null,
     available: false,
     data: null,
-    notice: "Classificação oficial indisponível — stats.nba.com bloqueou esta requisição.",
+    notice: "Classificação oficial indisponível - stats.nba.com bloqueou esta requisição.",
   };
 }

@@ -43,7 +43,7 @@ export function LeagueLeadersLive() {
     <section>
       <div className="mb-3 flex items-end justify-between gap-3 flex-wrap">
         <div>
-          <div className="eyebrow">Líderes — Temporada {season}–{String(season + 1).slice(2)}</div>
+          <div className="eyebrow">Líderes - Temporada {season}–{String(season + 1).slice(2)}</div>
           <h2 className="font-display text-2xl md:text-3xl">Líderes da liga</h2>
         </div>
         <div className="flex items-end gap-2 flex-wrap">

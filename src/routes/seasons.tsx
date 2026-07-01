@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { CHAMPIONS_HISTORY } from "@/data/champions";
 import { LeagueLeadersLive } from "@/components/LeagueLeadersLive";
@@ -7,7 +7,7 @@ import { getCurrentSeason } from "@/lib/season";
 export const Route = createFileRoute("/seasons")({
   head: () => ({
     meta: [
-      { title: "Temporadas & Histórico — Midrange Frenzy" },
+      { title: "Temporadas & Histórico - Midrange Frenzy" },
       { name: "description", content: "Linha do tempo de temporadas da NBA com campeões e líderes estatísticos atualizados." },
     ],
   }),
@@ -121,10 +121,6 @@ function SeasonsPage() {
         </div>
       </section>
 
-      <div className="text-sm text-muted-foreground">
-        Quer explorar os melhores quintetos da história?{" "}
-        <Link to="/lineups" className="text-flame hover:underline">Veja composições históricas →</Link>
-      </div>
     </div>
   );
 }

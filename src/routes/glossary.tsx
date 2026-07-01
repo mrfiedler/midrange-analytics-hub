@@ -6,7 +6,7 @@ import { Search } from "lucide-react";
 export const Route = createFileRoute("/glossary")({
   head: () => ({
     meta: [
-      { title: "Glossário de métricas — Midrange Frenzy" },
+      { title: "Glossário de métricas - Midrange Frenzy" },
       { name: "description", content: "Todas as siglas e métricas do basquete explicadas em linguagem simples e técnica, com fórmula e escala de referência." },
     ],
   }),

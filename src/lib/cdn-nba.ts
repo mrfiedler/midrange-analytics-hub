@@ -35,7 +35,7 @@ export interface ScoreboardResult {
 }
 
 /**
- * Server-side proxy for cdn.nba.com — avoids CORS in the browser.
+ * Server-side proxy for cdn.nba.com - avoids CORS in the browser.
  */
 export const getLiveScoreboard = createServerFn({ method: "GET" })
   .handler(async (): Promise<ScoreboardResult> => {

@@ -4,7 +4,7 @@ import { useMode } from "@/lib/mode-context";
 export const Route = createFileRoute("/settings")({
   head: () => ({
     meta: [
-      { title: "Configurações — Midrange Frenzy" },
+      { title: "Configurações - Midrange Frenzy" },
       { name: "description", content: "Personalize o modo de exibição (Newbie / Pro) e preferências da plataforma." },
     ],
   }),

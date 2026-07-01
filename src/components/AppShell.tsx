@@ -1,26 +1,30 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, Users, Shield, Layers, Swords, BarChart3, BookOpen, Settings, Search } from "lucide-react";
+import { Home, Users, Shield, Swords, BarChart3, BookOpen, Settings, Search, Menu, X } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
 import logo from "@/assets/mrf-logo.png.asset.json";
 import { ModeToggle } from "@/components/ModeToggle";
-import type { ReactNode } from "react";
 
 const NAV = [
-  { to: "/",          label: "Dashboard",            Icon: Home },
-  { to: "/players",   label: "Jogadores",            Icon: Users },
-  { to: "/teams",     label: "Times",                Icon: Shield },
-  { to: "/lineups",   label: "Composições históricas", Icon: Layers },
-  { to: "/compare",   label: "Comparador",           Icon: Swords },
+  { to: "/",          label: "Dashboard",              Icon: Home },
+  { to: "/players",   label: "Jogadores",              Icon: Users },
+  { to: "/teams",     label: "Times",                  Icon: Shield },
+  { to: "/compare",   label: "Comparador",             Icon: Swords },
   { to: "/seasons",   label: "Temporadas & Histórico", Icon: BarChart3 },
-  { to: "/glossary",  label: "Glossário",            Icon: BookOpen },
-  { to: "/settings",  label: "Configurações",        Icon: Settings },
+  { to: "/glossary",  label: "Glossário",              Icon: BookOpen },
+  { to: "/settings",  label: "Configurações",          Icon: Settings },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
 
   return (
     <div className="min-h-screen flex w-full bg-background text-foreground">
-      {/* Sidebar */}
+      {/* Desktop sidebar */}
       <aside className="hidden md:flex flex-col w-60 shrink-0 border-r border-hairline bg-sidebar sticky top-0 h-screen">
         <Link to="/" className="px-5 pt-6 pb-4 border-b border-hairline group">
           <img src={logo.url} alt="Midrange Frenzy" className="h-20 w-auto transition-transform group-hover:scale-[1.02]" />
@@ -55,11 +59,48 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
+      {/* Mobile drawer */}
+      {mobileOpen && (
+        <div className="md:hidden fixed inset-0 z-50 flex">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setMobileOpen(false)} />
+          <aside className="relative flex flex-col w-64 max-w-[80vw] h-full bg-sidebar border-r border-hairline">
+            <div className="flex items-center justify-between px-4 pt-5 pb-3 border-b border-hairline">
+              <img src={logo.url} alt="Midrange Frenzy" className="h-12 w-auto" />
+              <button
+                aria-label="Fechar menu"
+                onClick={() => setMobileOpen(false)}
+                className="rounded-md p-2 hover:bg-surface"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+            <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
+              {NAV.map(({ to, label, Icon }) => {
+                const active = to === "/" ? pathname === "/" : pathname.startsWith(to);
+                return (
+                  <Link
+                    key={to}
+                    to={to}
+                    className={[
+                      "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors",
+                      active ? "bg-surface text-foreground" : "text-muted-foreground hover:bg-surface hover:text-foreground",
+                    ].join(" ")}
+                  >
+                    <Icon className={`size-4 shrink-0 ${active ? "text-flame" : ""}`} />
+                    <span className="truncate">{label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+          </aside>
+        </div>
+      )}
+
       {/* Main column */}
       <div className="flex-1 min-w-0 flex flex-col">
-        <Header />
-        <main className="flex-1 min-w-0 p-5 md:p-8">{children}</main>
-        <footer className="px-5 md:px-8 py-5 border-t border-hairline text-[11px] text-muted-foreground/70 flex flex-wrap items-center gap-3 justify-between">
+        <Header onOpenMenu={() => setMobileOpen(true)} />
+        <main className="flex-1 min-w-0 p-4 sm:p-5 md:p-8">{children}</main>
+        <footer className="px-4 sm:px-5 md:px-8 py-5 border-t border-hairline text-[11px] text-muted-foreground/70 flex flex-wrap items-center gap-3 justify-between">
           <span>Dados: balldontlie.io · Estatísticas atualizadas diariamente</span>
           <span className="font-display uppercase tracking-widest">midrange · frenzy</span>
         </footer>
@@ -68,18 +109,24 @@ export function AppShell({ children }: { children: ReactNode }) {
   );
 }
 
-function Header() {
+function Header({ onOpenMenu }: { onOpenMenu: () => void }) {
   return (
     <header className="sticky top-0 z-30 border-b border-hairline bg-background/85 backdrop-blur-md">
-      <div className="flex items-center gap-3 px-5 md:px-8 h-16">
-        {/* Mobile logo */}
-        <Link to="/" className="md:hidden flex items-center">
+      <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-5 md:px-8 h-14 sm:h-16">
+        <button
+          aria-label="Abrir menu"
+          onClick={onOpenMenu}
+          className="md:hidden rounded-md p-2 hover:bg-surface"
+        >
+          <Menu className="size-5" />
+        </button>
+        <Link to="/" className="md:hidden flex items-center shrink-0">
           <img src={logo.url} alt="MRF" className="h-8 w-auto" />
         </Link>
 
         <GlobalSearch />
 
-        <div className="ml-auto flex items-center gap-3">
+        <div className="ml-auto flex items-center gap-2 sm:gap-3">
           <ModeToggle />
         </div>
       </div>
@@ -92,10 +139,11 @@ function GlobalSearch() {
   return (
     <Link
       to="/players"
-      className="group flex-1 max-w-xl flex items-center gap-2.5 rounded-md border border-hairline bg-surface px-3 py-2 text-sm text-muted-foreground transition-colors hover:border-flame/50 hover:text-foreground"
+      className="group flex-1 min-w-0 max-w-xl flex items-center gap-2.5 rounded-md border border-hairline bg-surface px-3 py-2 text-sm text-muted-foreground transition-colors hover:border-flame/50 hover:text-foreground"
     >
       <Search className="size-4 shrink-0" />
-      <span className="truncate">Buscar jogadores, times, composições…</span>
+      <span className="truncate hidden sm:inline">Buscar jogadores, times, composições...</span>
+      <span className="truncate sm:hidden">Buscar...</span>
       <kbd className="ml-auto hidden sm:inline-flex h-5 items-center rounded border border-hairline bg-background px-1.5 text-[10px] font-mono text-muted-foreground/80">/</kbd>
     </Link>
   );

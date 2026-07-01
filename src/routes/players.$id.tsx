@@ -14,7 +14,7 @@ import { PlayerAvatar } from "@/components/players/PlayerAvatar";
 export const Route = createFileRoute("/players/$id")({
   head: ({ params }) => ({
     meta: [
-      { title: `Perfil do jogador #${params.id} — Midrange Frenzy` },
+      { title: `Perfil do jogador #${params.id} - Midrange Frenzy` },
       { name: "description", content: "Perfil completo de jogador NBA com estatísticas básicas e avançadas, radar, evolução por temporada." },
     ],
   }),
@@ -84,7 +84,7 @@ function PlayerProfile() {
               {player.height && <span>Altura {player.height}</span>}
               {player.weight && <span>Peso {player.weight} lb</span>}
               {player.country && <span>{player.country}</span>}
-              {player.draftYear && <span>Draft {player.draftYear} · pick {player.draftNumber ?? "—"}</span>}
+              {player.draftYear && <span>Draft {player.draftYear} · pick {player.draftNumber ?? "-"}</span>}
             </div>
           </div>
 
@@ -145,7 +145,7 @@ function PlayerProfile() {
                 <StatCard abbr="FT%" value={`${(averages.ft_pct * 100).toFixed(1)}%`} accent="court" />
                 <StatCard abbr="eFG%" value={`${(((averages.fgm + 0.5 * averages.fg3m) / Math.max(averages.fga, 0.1)) * 100).toFixed(1)}%`} />
                 <StatCard abbr="TS%" value={`${((averages.pts / Math.max(2 * (averages.fga + 0.44 * averages.fta), 0.1)) * 100).toFixed(1)}%`} accent="court" />
-                <StatCard abbr="PER" value={"—"} hint="Indisponível na API pública" accent="amber" />
+                <StatCard abbr="PER" value={"-"} hint="Indisponível na API pública" accent="amber" />
                 <StatCard abbr="TOV" value={averages.turnover.toFixed(1)} hint="Turnovers por jogo" />
               </div>
             )}

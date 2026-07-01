@@ -1,32 +1,15 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Trophy } from "lucide-react";
-import { useServerFn } from "@tanstack/react-start";
 import { CHAMPIONS, getChampionForSeason, type Champion } from "@/data/champions";
 import { teamLogoUrl } from "@/lib/nba-logos";
 import { getCurrentSeason } from "@/lib/season";
-import { fetchWikipediaChampion } from "@/lib/cdn-nba";
 
 export function ChampionBanner() {
   const fallbackSeason = getCurrentSeason();
-  const [champ, setChamp] = useState<Champion>(
+  const [champ] = useState<Champion>(
     getChampionForSeason(fallbackSeason) ?? CHAMPIONS[0]
   );
-  const fetchWiki = useServerFn(fetchWikipediaChampion);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetchWiki({}).then((teamName) => {
-      if (cancelled || !teamName) return;
-      const match = CHAMPIONS.find((c) =>
-        teamName.toLowerCase().includes(c.team.split(" ").slice(-1)[0].toLowerCase())
-      );
-      if (match) setChamp(match);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [fetchWiki]);
 
   const logo = teamLogoUrl(champ.teamAbbr);
 
