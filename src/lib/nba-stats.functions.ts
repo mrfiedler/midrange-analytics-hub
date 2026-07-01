@@ -302,3 +302,42 @@ export const getPublicLeagueLeaders = createServerFn({ method: "GET" })
       return { ok: false as const, rows: [], error: (err as Error).message };
     }
   });
+
+export const getChampionMetrics = createServerFn({ method: "GET" })
+  .inputValidator((d) => ChampionMetricsInput.parse(d))
+  .handler(async ({ data }): Promise<ChampionMetricsResult> => {
+    try {
+      const [regularSeason, leadingScorer, nbaAdvanced] = await Promise.all([
+        getEspnTeamRegularSeason(data).catch(() => ({})),
+        getEspnTeamLeadingScorer(data).catch(() => undefined),
+        getNbaAdvancedTeamMetrics(data).catch(() => ({})),
+      ]);
+
+      let advanced = nbaAdvanced;
+      if (typeof advanced.ortg !== "number" || typeof advanced.drtg !== "number" || typeof advanced.netRtg !== "number") {
+        advanced = await getBasketballReferenceTeamMetrics(data).catch(() => ({}));
+      }
+
+      const result: ChampionMetricsResult = {
+        ok: Boolean(
+          regularSeason.record ||
+          typeof regularSeason.ppg === "number" ||
+          typeof advanced.ortg === "number" ||
+          typeof advanced.drtg === "number" ||
+          typeof advanced.netRtg === "number" ||
+          leadingScorer,
+        ),
+        record: regularSeason.record ?? advanced.record,
+        ppg: regularSeason.ppg ?? advanced.ppg,
+        ortg: advanced.ortg,
+        drtg: advanced.drtg,
+        netRtg: advanced.netRtg,
+        leadingScorer,
+        source: advanced.source ?? "ESPN public",
+      };
+
+      return result;
+    } catch (err) {
+      return { ok: false, error: (err as Error).message };
+    }
+  });
