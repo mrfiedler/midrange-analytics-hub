@@ -12,7 +12,7 @@ import { getCurrentSeason } from "@/lib/season";
 export const Route = createFileRoute("/compare")({
   head: () => ({
     meta: [
-      { title: "Comparador — Midrange Frenzy" },
+      { title: "Comparador - Midrange Frenzy" },
       { name: "description", content: "Compare 2 a 4 jogadores lado a lado com radar, barras e estatísticas detalhadas." },
     ],
   }),
@@ -68,7 +68,7 @@ function ComparePage() {
             const url = window.location.href;
             try {
               if (navigator.share) {
-                await navigator.share({ title: "Midrange Frenzy — Comparador", url });
+                await navigator.share({ title: "Midrange Frenzy - Comparador", url });
               } else {
                 await navigator.clipboard.writeText(url);
                 const { toast } = await import("sonner");
@@ -215,7 +215,7 @@ function Picker({ onPick, onClose }: { onPick: (id: number, name: string) => voi
               >
                 <span className="size-2 rounded-full bg-flame" />
                 <span className="flex-1 truncate">{p.fullName}</span>
-                <span className="text-xs text-muted-foreground">{p.team?.abbr ?? "—"} · {p.position}</span>
+                <span className="text-xs text-muted-foreground">{p.team?.abbr ?? "-"} · {p.position}</span>
               </button>
             </li>
           ))}

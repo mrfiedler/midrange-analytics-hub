@@ -10,7 +10,7 @@ import { findMetric } from "@/data/glossary";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Midrange Frenzy — Dashboard" },
+      { title: "Midrange Frenzy - Dashboard" },
       { name: "description", content: "Líderes do dia, jogos recentes e métrica do dia. A central de análise de basquete em português." },
     ],
   }),
@@ -31,7 +31,7 @@ function Dashboard() {
             Cada arremesso conta. <span className="text-flame">Cada métrica importa.</span>
           </h1>
           <p className="mt-3 text-muted-foreground max-w-xl">
-            Acompanhe líderes, compare jogadores e entenda o que cada sigla significa — do passe certeiro à eficiência verdadeira.
+            Acompanhe líderes, compare jogadores e entenda o que cada sigla significa - do passe certeiro à eficiência verdadeira.
           </p>
           <div className="mt-6 flex flex-wrap gap-2">
             <Link to="/compare" className="inline-flex items-center gap-2 rounded-md flame-bg px-4 py-2.5 text-sm font-display uppercase tracking-widest text-white hover:opacity-95">

@@ -15,7 +15,7 @@ export interface Champion {
 }
 
 /**
- * Champions roster — fallback when Wikipedia API fails.
+ * Champions roster - fallback when Wikipedia API fails.
  * Update as new seasons end.
  */
 export const CHAMPIONS: Champion[] = [

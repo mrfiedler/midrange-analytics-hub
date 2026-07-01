@@ -6,7 +6,7 @@ import { useState } from "react";
 export const Route = createFileRoute("/teams/")({
   head: () => ({
     meta: [
-      { title: "Times — Midrange Frenzy" },
+      { title: "Times - Midrange Frenzy" },
       { name: "description", content: "As 30 franquias da NBA com estatísticas coletivas, ranking ofensivo e defensivo." },
     ],
   }),

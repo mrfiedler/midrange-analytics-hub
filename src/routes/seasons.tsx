@@ -7,7 +7,7 @@ import { getCurrentSeason } from "@/lib/season";
 export const Route = createFileRoute("/seasons")({
   head: () => ({
     meta: [
-      { title: "Temporadas & Histórico — Midrange Frenzy" },
+      { title: "Temporadas & Histórico - Midrange Frenzy" },
       { name: "description", content: "Linha do tempo de temporadas da NBA com campeões e líderes estatísticos atualizados." },
     ],
   }),

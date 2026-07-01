@@ -49,7 +49,7 @@ function statValue(row: any, allCategories: any[], category: string, name: strin
 
 /**
  * Proxy para stats.nba.com.
- * A NBA bloqueia IPs de datacenter — esta função PODE falhar de forma intermitente.
+ * A NBA bloqueia IPs de datacenter - esta função PODE falhar de forma intermitente.
  * Frontend deve sempre tratar { ok: false } como cenário esperado e cair em fallback.
  */
 export const nbaStatsProxy = createServerFn({ method: "POST" })
@@ -98,8 +98,8 @@ export const getPublicLeagueLeaders = createServerFn({ method: "GET" })
       const categories = json.categories ?? [];
       const all = (json.athletes ?? []).map((row: any) => ({
         playerId: Number(row.athlete?.id ?? 0),
-        playerName: row.athlete?.displayName ?? "—",
-        teamAbbr: row.athlete?.teams?.[0]?.abbreviation ?? row.athlete?.teamShortName ?? "—",
+        playerName: row.athlete?.displayName ?? "-",
+        teamAbbr: row.athlete?.teams?.[0]?.abbreviation ?? row.athlete?.teamShortName ?? "-",
         value: data.cat === "PTS" ? statValue(row, categories, "offensive", "avgPoints")
           : data.cat === "AST" ? statValue(row, categories, "offensive", "avgAssists")
           : data.cat === "REB" ? statValue(row, categories, "general", "avgRebounds")

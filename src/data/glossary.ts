@@ -40,7 +40,7 @@ export const METRICS: Metric[] = [
     scale: { ruim: "< 0.3", medio: "0.3–0.7", bom: "0.8–1.4", elite: "1.5+" } },
   { abbr: "FGM", name: "Cestas de quadra convertidas", category: "Básicas",
     newbie: "Quantas cestas de 2 ou 3 pontos o jogador acertou (sem contar lance livre).",
-    technical: "Field goals made.", formula: "—" },
+    technical: "Field goals made.", formula: "-" },
   { abbr: "FGA", name: "Tentativas de cesta de quadra", category: "Básicas",
     newbie: "Quantos arremessos de 2 ou 3 pontos o jogador tentou.",
     technical: "Field goals attempted." },
@@ -70,7 +70,7 @@ export const METRICS: Metric[] = [
 
   // Eficiência / Avançadas
   { abbr: "eFG%", name: "Aproveitamento efetivo", category: "Eficiência",
-    newbie: "Igual ao FG%, mas dá um peso extra pra cestas de 3 — porque valem mais.",
+    newbie: "Igual ao FG%, mas dá um peso extra pra cestas de 3 - porque valem mais.",
     technical: "Effective field goal percentage.",
     formula: "(FGM + 0.5 × 3PM) / FGA",
     scale: { ruim: "< 47%", medio: "47–52%", bom: "53–58%", elite: "59%+" } },

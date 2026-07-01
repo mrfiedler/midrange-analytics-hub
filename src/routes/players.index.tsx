@@ -9,7 +9,7 @@ import { PlayerAvatar } from "@/components/players/PlayerAvatar";
 export const Route = createFileRoute("/players/")({
   head: () => ({
     meta: [
-      { title: "Jogadores — Midrange Frenzy" },
+      { title: "Jogadores - Midrange Frenzy" },
       { name: "description", content: "Busque qualquer jogador da NBA e veja suas estatísticas básicas e avançadas." },
     ],
   }),
@@ -95,7 +95,7 @@ function PlayersSearch() {
                 <div className="min-w-0 flex-1">
                   <div className="font-medium truncate">{p.fullName}</div>
                   <div className="text-xs text-muted-foreground truncate">
-                    {p.position && p.position !== "—" ? p.position : "—"}
+                    {p.position && p.position !== "-" ? p.position : "-"}
                     {p.team && ` · ${p.team.abbr} ${p.team.name}`}
                   </div>
                 </div>
