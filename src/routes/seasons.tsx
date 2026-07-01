@@ -121,10 +121,6 @@ function SeasonsPage() {
         </div>
       </section>
 
-      <div className="text-sm text-muted-foreground">
-        Quer explorar os melhores quintetos da história?{" "}
-        <Link to="/lineups" className="text-flame hover:underline">Veja composições históricas →</Link>
-      </div>
     </div>
   );
 }
