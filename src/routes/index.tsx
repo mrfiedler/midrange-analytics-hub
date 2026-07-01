@@ -40,8 +40,8 @@ function Dashboard() {
             <Link to="/players" className="inline-flex items-center gap-2 rounded-md border border-hairline bg-surface/70 backdrop-blur px-4 py-2.5 text-sm font-display uppercase tracking-widest text-foreground hover:border-flame/60">
               Buscar jogadores
             </Link>
-            <Link to="/lineups" className="inline-flex items-center gap-2 rounded-md border border-hairline bg-surface/70 backdrop-blur px-4 py-2.5 text-sm font-display uppercase tracking-widest text-foreground hover:border-accent/70">
-              Composições históricas
+            <Link to="/seasons" className="inline-flex items-center gap-2 rounded-md border border-hairline bg-surface/70 backdrop-blur px-4 py-2.5 text-sm font-display uppercase tracking-widest text-foreground hover:border-accent/70">
+              Temporadas
             </Link>
           </div>
         </div>

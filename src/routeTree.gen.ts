@@ -13,7 +13,6 @@ import { Route as TeamsRouteImport } from './routes/teams'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SeasonsRouteImport } from './routes/seasons'
 import { Route as PlayersRouteImport } from './routes/players'
-import { Route as LineupsRouteImport } from './routes/lineups'
 import { Route as GlossaryRouteImport } from './routes/glossary'
 import { Route as CompareRouteImport } from './routes/compare'
 import { Route as IndexRouteImport } from './routes/index'
@@ -40,11 +39,6 @@ const SeasonsRoute = SeasonsRouteImport.update({
 const PlayersRoute = PlayersRouteImport.update({
   id: '/players',
   path: '/players',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LineupsRoute = LineupsRouteImport.update({
-  id: '/lineups',
-  path: '/lineups',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GlossaryRoute = GlossaryRouteImport.update({
@@ -87,7 +81,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/compare': typeof CompareRoute
   '/glossary': typeof GlossaryRoute
-  '/lineups': typeof LineupsRoute
   '/players': typeof PlayersRouteWithChildren
   '/seasons': typeof SeasonsRoute
   '/settings': typeof SettingsRoute
@@ -101,7 +94,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/compare': typeof CompareRoute
   '/glossary': typeof GlossaryRoute
-  '/lineups': typeof LineupsRoute
   '/seasons': typeof SeasonsRoute
   '/settings': typeof SettingsRoute
   '/players/$id': typeof PlayersIdRoute
@@ -114,7 +106,6 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/compare': typeof CompareRoute
   '/glossary': typeof GlossaryRoute
-  '/lineups': typeof LineupsRoute
   '/players': typeof PlayersRouteWithChildren
   '/seasons': typeof SeasonsRoute
   '/settings': typeof SettingsRoute
@@ -130,7 +121,6 @@ export interface FileRouteTypes {
     | '/'
     | '/compare'
     | '/glossary'
-    | '/lineups'
     | '/players'
     | '/seasons'
     | '/settings'
@@ -144,7 +134,6 @@ export interface FileRouteTypes {
     | '/'
     | '/compare'
     | '/glossary'
-    | '/lineups'
     | '/seasons'
     | '/settings'
     | '/players/$id'
@@ -156,7 +145,6 @@ export interface FileRouteTypes {
     | '/'
     | '/compare'
     | '/glossary'
-    | '/lineups'
     | '/players'
     | '/seasons'
     | '/settings'
@@ -171,7 +159,6 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CompareRoute: typeof CompareRoute
   GlossaryRoute: typeof GlossaryRoute
-  LineupsRoute: typeof LineupsRoute
   PlayersRoute: typeof PlayersRouteWithChildren
   SeasonsRoute: typeof SeasonsRoute
   SettingsRoute: typeof SettingsRoute
@@ -206,13 +193,6 @@ declare module '@tanstack/react-router' {
       path: '/players'
       fullPath: '/players'
       preLoaderRoute: typeof PlayersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/lineups': {
-      id: '/lineups'
-      path: '/lineups'
-      fullPath: '/lineups'
-      preLoaderRoute: typeof LineupsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/glossary': {
@@ -296,7 +276,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CompareRoute: CompareRoute,
   GlossaryRoute: GlossaryRoute,
-  LineupsRoute: LineupsRoute,
   PlayersRoute: PlayersRouteWithChildren,
   SeasonsRoute: SeasonsRoute,
   SettingsRoute: SettingsRoute,
@@ -305,13 +284,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
