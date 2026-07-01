@@ -30,6 +30,24 @@ const LeaderInput = z.object({
   season: z.number().int().min(2002).max(2100).optional(),
 });
 
+const ChampionMetricsInput = z.object({
+  season: z.number().int().min(1979).max(2100),
+  teamAbbr: z.string().min(2).max(4),
+  teamName: z.string().min(2).max(80),
+});
+
+export interface ChampionMetricsResult {
+  ok: boolean;
+  record?: string;
+  ppg?: number;
+  ortg?: number;
+  drtg?: number;
+  netRtg?: number;
+  leadingScorer?: { name: string; ppg: number };
+  source?: string;
+  error?: string;
+}
+
 
 const LEADER_SORT: Record<z.infer<typeof LeaderInput>["cat"], string> = {
   PTS: "offensive.avgPoints:desc",
@@ -39,6 +57,165 @@ const LEADER_SORT: Record<z.infer<typeof LeaderInput>["cat"], string> = {
   BLK: "defensive.avgBlocks:desc",
   FG3M: "offensive.avgThreePointFieldGoalsMade:desc",
 };
+
+const ESPN_TEAM_ABBR: Record<string, string> = {
+  NYK: "NY",
+  GSW: "GS",
+  SAS: "SA",
+  NOP: "NO",
+  UTA: "UTAH",
+};
+
+const BBR_TEAM_ABBR: Record<string, string> = {
+  ATL: "ATL", BOS: "BOS", BKN: "BRK", CHA: "CHO", CHI: "CHI", CLE: "CLE",
+  DAL: "DAL", DEN: "DEN", DET: "DET", GSW: "GSW", HOU: "HOU", IND: "IND",
+  LAC: "LAC", LAL: "LAL", MEM: "MEM", MIA: "MIA", MIL: "MIL", MIN: "MIN",
+  NOP: "NOP", NYK: "NYK", OKC: "OKC", ORL: "ORL", PHI: "PHI", PHX: "PHO",
+  POR: "POR", SAC: "SAC", SAS: "SAS", TOR: "TOR", UTA: "UTA", WAS: "WAS",
+};
+
+function seasonParam(season: number) {
+  return season + 1;
+}
+
+function seasonStr(season: number) {
+  return `${season}-${String(season + 1).slice(2)}`;
+}
+
+function round1(value: number | undefined) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return undefined;
+  return Math.round(value * 10) / 10;
+}
+
+function statFromEspnEntry(entry: any, name: string) {
+  const value = entry?.stats?.find((s: any) => s.name === name)?.value;
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+function sameTeam(team: any, teamAbbr: string, teamName: string) {
+  const wanted = teamAbbr.toUpperCase();
+  const espn = ESPN_TEAM_ABBR[wanted] ?? wanted;
+  const abbr = String(team?.abbreviation ?? "").toUpperCase();
+  const displayName = String(team?.displayName ?? team?.name ?? "").toLowerCase();
+  return abbr === wanted || abbr === espn || displayName === teamName.toLowerCase();
+}
+
+function statValueByName(row: any, allCategories: any[], category: string, name: string, splitId = "0") {
+  const rowCategories = row?.categories ?? [];
+  const index = rowCategories.findIndex((c: any) => c.name === category && String(c.splitId ?? "0") === splitId);
+  if (index < 0) return 0;
+  const labels = allCategories[index]?.names ?? [];
+  const statIndex = labels.indexOf(name);
+  return Number(statIndex >= 0 ? rowCategories[index].values?.[statIndex] ?? 0 : 0);
+}
+
+function numberFromText(text: string, label: string) {
+  const match = text.match(new RegExp(`${label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*:?\\s*([+-]?\\d+(?:\\.\\d+)?)`, "i"));
+  return match ? Number(match[1]) : undefined;
+}
+
+async function getEspnTeamRegularSeason(data: z.infer<typeof ChampionMetricsInput>) {
+  const url = new URL("https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings");
+  url.searchParams.set("season", String(seasonParam(data.season)));
+  url.searchParams.set("seasontype", "2");
+
+  const json = await cached(`espn:standings:${data.season}`, 30 * 60_000, async () => {
+    const res = await fetch(url.toString(), { headers: ESPN_HEADERS, signal: AbortSignal.timeout(10_000) });
+    if (!res.ok) throw new Error(`espn standings ${res.status}`);
+    return res.json();
+  });
+
+  const entries = (json.children ?? []).flatMap((child: any) => child?.standings?.entries ?? []);
+  const entry = entries.find((item: any) => sameTeam(item.team, data.teamAbbr, data.teamName));
+  if (!entry) return {};
+
+  const wins = statFromEspnEntry(entry, "wins");
+  const losses = statFromEspnEntry(entry, "losses");
+  return {
+    record: typeof wins === "number" && typeof losses === "number" ? `${wins}-${losses}` : undefined,
+    ppg: round1(statFromEspnEntry(entry, "avgPointsFor")),
+  };
+}
+
+async function getEspnTeamLeadingScorer(data: z.infer<typeof ChampionMetricsInput>) {
+  const url = new URL("https://site.web.api.espn.com/apis/common/v3/sports/basketball/nba/statistics/byathlete");
+  url.searchParams.set("region", "us");
+  url.searchParams.set("lang", "en");
+  url.searchParams.set("contentorigin", "espn");
+  url.searchParams.set("season", String(seasonParam(data.season)));
+  url.searchParams.set("seasontype", "2");
+  url.searchParams.set("limit", "500");
+  url.searchParams.set("sort", "offensive.avgPoints:desc");
+
+  const json = await cached(`espn:team-scorer:${data.season}:${data.teamAbbr}`, 30 * 60_000, async () => {
+    const res = await fetch(url.toString(), { headers: ESPN_HEADERS, signal: AbortSignal.timeout(10_000) });
+    if (!res.ok) throw new Error(`espn scorers ${res.status}`);
+    return res.json();
+  });
+
+  const categories = json.categories ?? [];
+  const row = (json.athletes ?? []).find((item: any) => {
+    const team = item?.athlete?.teams?.[0] ?? { abbreviation: item?.athlete?.teamShortName };
+    return sameTeam(team, data.teamAbbr, data.teamName);
+  });
+  if (!row) return undefined;
+  const ppg = round1(statValueByName(row, categories, "offensive", "avgPoints"));
+  const name = String(row.athlete?.displayName ?? "");
+  return name && typeof ppg === "number" ? { name, ppg } : undefined;
+}
+
+async function getNbaAdvancedTeamMetrics(data: z.infer<typeof ChampionMetricsInput>) {
+  const url = new URL("https://stats.nba.com/stats/leaguedashteamstats");
+  const params = {
+    Conference: "", DateFrom: "", DateTo: "", Division: "", GameScope: "", GameSegment: "",
+    LastNGames: "0", LeagueID: "00", Location: "", MeasureType: "Advanced", Month: "0",
+    OpponentTeamID: "0", Outcome: "", PORound: "0", PaceAdjust: "N", PerMode: "PerGame",
+    Period: "0", PlusMinus: "N", Rank: "N", Season: seasonStr(data.season), SeasonSegment: "",
+    SeasonType: "Regular Season", ShotClockRange: "", TeamID: "0", TwoWay: "0", VsConference: "", VsDivision: "",
+  };
+  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+
+  const json = await cached(`nba:champion-advanced:${data.season}`, 30 * 60_000, async () => {
+    const res = await fetch(url.toString(), { headers: NBA_HEADERS, signal: AbortSignal.timeout(6000) });
+    if (!res.ok) throw new Error(`stats.nba.com ${res.status}`);
+    return (await res.json()) as { resultSets: Array<{ headers: string[]; rowSet: any[][] }> };
+  });
+
+  const rs = json.resultSets?.[0];
+  if (!rs) return {};
+  const idx = (name: string) => rs.headers.indexOf(name);
+  const teamAbbrIndex = idx("TEAM_ABBREVIATION");
+  const teamNameIndex = idx("TEAM_NAME");
+  const row = rs.rowSet.find((r) => sameTeam({ abbreviation: r[teamAbbrIndex], displayName: r[teamNameIndex] }, data.teamAbbr, data.teamName));
+  if (!row) return {};
+  return {
+    ortg: round1(Number(row[idx("OFF_RATING")])),
+    drtg: round1(Number(row[idx("DEF_RATING")])),
+    netRtg: round1(Number(row[idx("NET_RATING")])),
+    source: "stats.nba.com",
+  };
+}
+
+async function getBasketballReferenceTeamMetrics(data: z.infer<typeof ChampionMetricsInput>) {
+  const team = BBR_TEAM_ABBR[data.teamAbbr.toUpperCase()];
+  if (!team) return {};
+  const url = `https://www.basketball-reference.com/teams/${team}/${seasonParam(data.season)}.html`;
+  const html = await cached(`bbr:team:${data.season}:${team}`, 12 * 60 * 60_000, async () => {
+    const res = await fetch(url, { headers: ESPN_HEADERS, signal: AbortSignal.timeout(10_000) });
+    if (!res.ok) throw new Error(`basketball-reference ${res.status}`);
+    return res.text();
+  });
+  const text = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+  const record = text.match(/Record:\s*(\d+-\d+)/i)?.[1];
+  return {
+    record,
+    ppg: round1(numberFromText(text, "PTS/G")),
+    ortg: round1(numberFromText(text, "Off Rtg")),
+    drtg: round1(numberFromText(text, "Def Rtg")),
+    netRtg: round1(numberFromText(text, "Net Rtg")),
+    source: "Basketball Reference",
+  };
+}
 
 function statValue(row: any, allCategories: any[], category: string, name: string) {
   const cat = row.categories?.find((c: any) => c.name === category);
