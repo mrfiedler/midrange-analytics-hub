@@ -48,6 +48,8 @@ export interface ChampionMetricsResult {
   error?: string;
 }
 
+type TeamMetricsPartial = Partial<Omit<ChampionMetricsResult, "ok" | "leadingScorer" | "error">>;
+
 
 const LEADER_SORT: Record<z.infer<typeof LeaderInput>["cat"], string> = {
   PTS: "offensive.avgPoints:desc",
@@ -114,7 +116,7 @@ function numberFromText(text: string, label: string) {
   return match ? Number(match[1]) : undefined;
 }
 
-async function getEspnTeamRegularSeason(data: z.infer<typeof ChampionMetricsInput>) {
+async function getEspnTeamRegularSeason(data: z.infer<typeof ChampionMetricsInput>): Promise<TeamMetricsPartial> {
   const url = new URL("https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings");
   url.searchParams.set("season", String(seasonParam(data.season)));
   url.searchParams.set("seasontype", "2");
@@ -164,7 +166,7 @@ async function getEspnTeamLeadingScorer(data: z.infer<typeof ChampionMetricsInpu
   return name && typeof ppg === "number" ? { name, ppg } : undefined;
 }
 
-async function getNbaAdvancedTeamMetrics(data: z.infer<typeof ChampionMetricsInput>) {
+async function getNbaAdvancedTeamMetrics(data: z.infer<typeof ChampionMetricsInput>): Promise<TeamMetricsPartial> {
   const url = new URL("https://stats.nba.com/stats/leaguedashteamstats");
   const params = {
     Conference: "", DateFrom: "", DateTo: "", Division: "", GameScope: "", GameSegment: "",
@@ -196,7 +198,7 @@ async function getNbaAdvancedTeamMetrics(data: z.infer<typeof ChampionMetricsInp
   };
 }
 
-async function getBasketballReferenceTeamMetrics(data: z.infer<typeof ChampionMetricsInput>) {
+async function getBasketballReferenceTeamMetrics(data: z.infer<typeof ChampionMetricsInput>): Promise<TeamMetricsPartial> {
   const team = BBR_TEAM_ABBR[data.teamAbbr.toUpperCase()];
   if (!team) return {};
   const url = `https://www.basketball-reference.com/teams/${team}/${seasonParam(data.season)}.html`;
@@ -308,14 +310,14 @@ export const getChampionMetrics = createServerFn({ method: "GET" })
   .handler(async ({ data }): Promise<ChampionMetricsResult> => {
     try {
       const [regularSeason, leadingScorer, nbaAdvanced] = await Promise.all([
-        getEspnTeamRegularSeason(data).catch(() => ({})),
+        getEspnTeamRegularSeason(data).catch((): TeamMetricsPartial => ({})),
         getEspnTeamLeadingScorer(data).catch(() => undefined),
-        getNbaAdvancedTeamMetrics(data).catch(() => ({})),
+        getNbaAdvancedTeamMetrics(data).catch((): TeamMetricsPartial => ({})),
       ]);
 
-      let advanced = nbaAdvanced;
+      let advanced: TeamMetricsPartial = nbaAdvanced;
       if (typeof advanced.ortg !== "number" || typeof advanced.drtg !== "number" || typeof advanced.netRtg !== "number") {
-        advanced = await getBasketballReferenceTeamMetrics(data).catch(() => ({}));
+        advanced = await getBasketballReferenceTeamMetrics(data).catch((): TeamMetricsPartial => ({}));
       }
 
       const result: ChampionMetricsResult = {
