@@ -104,6 +104,18 @@ function PlayerProfile() {
         </div>
       </section>
 
+      {q.data.meta && q.data.meta.sampleType === "partial" && (
+        <div className="mrf-card p-4 text-amber text-sm">
+          Amostra parcial: {q.data.meta.gamesPlayed} jogos na temporada {q.data.meta.seasonLabel}.
+          Médias podem oscilar até a temporada avançar. Fonte: {q.data.meta.source}.
+        </div>
+      )}
+      {q.data.meta && q.data.meta.sampleType === "season" && q.data.meta.season !== season && (
+        <div className="mrf-card p-4 text-muted-foreground text-sm">
+          Sem dados de temporada regular para {season}-{(season + 1).toString().slice(2)}. Exibindo última temporada disponível: {q.data.meta.seasonLabel} ({q.data.meta.gamesPlayed} jogos).
+        </div>
+      )}
+
       {!hasStats && (
         <div className="mrf-card p-5 text-amber text-sm">
           Estatísticas não disponíveis para a temporada {season}-{(season + 1).toString().slice(2)}.
