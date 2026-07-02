@@ -325,6 +325,7 @@ export const getPlayerProfile = createServerFn({ method: "GET" })
       type Averages = NonNullable<Awaited<ReturnType<typeof getEspnPlayerStats>>>;
       let averages: Averages | null = null;
       let partial: Averages | null = null;
+      let statSeason = season;
       let partialSeason = season;
       for (const candidate of seasonsToTry) {
         const row = await getEspnPlayerStats(data.id, candidate).catch(() => null);
