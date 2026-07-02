@@ -18,7 +18,8 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
-import logo from "../assets/mrf-logo.png.asset.json";
+// Logo/favicon come from static files under public/ so they work on Vercel
+// and any host without the internal /__l5e/... proxy.
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppShell } from "@/components/AppShell";
 import { ModeProvider } from "@/lib/mode-context";
@@ -86,8 +87,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
     links: [
       { rel: "stylesheet", href: appCss },
-      { rel: "icon", type: "image/png", href: logo.url },
-      { rel: "apple-touch-icon", href: logo.url },
+      { rel: "icon", type: "image/png", href: "/favicon.png" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
     ],
   }),
   shellComponent: RootShell,

@@ -1,8 +1,11 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Home, Users, Shield, Swords, BarChart3, BookOpen, Settings, Search, Menu, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
-import logo from "@/assets/mrf-logo.png.asset.json";
 import { ModeToggle } from "@/components/ModeToggle";
+
+// Static path served from /public - works on Vercel, Lovable, or any host
+// without depending on the internal /__l5e/... proxy.
+const LOGO_URL = "/mrf-logo.png";
 
 const NAV = [
   { to: "/",          label: "Dashboard",              Icon: Home },
@@ -27,7 +30,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* Desktop sidebar */}
       <aside className="hidden md:flex flex-col w-60 shrink-0 border-r border-hairline bg-sidebar sticky top-0 h-screen">
         <Link to="/" className="px-5 pt-6 pb-4 border-b border-hairline group">
-          <img src={logo.url} alt="Midrange Frenzy" className="h-20 w-auto transition-transform group-hover:scale-[1.02]" />
+          <img src={LOGO_URL} alt="Midrange Frenzy" className="h-20 w-auto transition-transform group-hover:scale-[1.02]" />
           <div className="mt-2 h-[2px] w-12 bg-flame rounded-full" />
         </Link>
         <nav className="flex-1 px-3 py-4 space-y-0.5 scrollbar-thin overflow-y-auto">
@@ -65,7 +68,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="absolute inset-0 bg-black/60" onClick={() => setMobileOpen(false)} />
           <aside className="relative flex flex-col w-64 max-w-[80vw] h-full bg-sidebar border-r border-hairline">
             <div className="flex items-center justify-between px-4 pt-5 pb-3 border-b border-hairline">
-              <img src={logo.url} alt="Midrange Frenzy" className="h-12 w-auto" />
+              <img src={LOGO_URL} alt="Midrange Frenzy" className="h-12 w-auto" />
               <button
                 aria-label="Fechar menu"
                 onClick={() => setMobileOpen(false)}
@@ -121,7 +124,7 @@ function Header({ onOpenMenu }: { onOpenMenu: () => void }) {
           <Menu className="size-5" />
         </button>
         <Link to="/" className="md:hidden flex items-center shrink-0">
-          <img src={logo.url} alt="MRF" className="h-8 w-auto" />
+          <img src={LOGO_URL} alt="MRF" className="h-8 w-auto" />
         </Link>
 
         <GlobalSearch />

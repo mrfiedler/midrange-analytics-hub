@@ -93,7 +93,10 @@ function PlayersSearch() {
               >
                 <PlayerAvatar id={p.id} firstName={p.firstName} lastName={p.lastName} />
                 <div className="min-w-0 flex-1">
-                  <div className="font-medium truncate">{p.fullName}</div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium truncate">{p.fullName}</span>
+                    <StatusBadge status={(p as any).status ?? "active"} />
+                  </div>
                   <div className="text-xs text-muted-foreground truncate">
                     {p.position && p.position !== "-" ? p.position : "-"}
                     {p.team && ` · ${p.team.abbr} ${p.team.name}`}
@@ -123,5 +126,20 @@ function PlayersSearch() {
         </div>
       )}
     </div>
+  );
+}
+
+function StatusBadge({ status }: { status: "active" | "inactive" }) {
+  if (status === "active") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-display uppercase tracking-widest text-emerald-400">
+        <span className="size-1 rounded-full bg-emerald-400" /> Ativo
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center rounded-full border border-hairline bg-surface-2 px-1.5 py-0.5 text-[9px] font-display uppercase tracking-widest text-muted-foreground">
+      Fora da liga
+    </span>
   );
 }
