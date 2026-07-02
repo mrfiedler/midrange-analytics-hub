@@ -18,7 +18,8 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
-import logo from "../assets/mrf-logo.png.asset.json";
+// Logo/favicon come from static files under public/ so they work on Vercel
+// and any host without the internal /__l5e/... proxy.
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppShell } from "@/components/AppShell";
 import { ModeProvider } from "@/lib/mode-context";
