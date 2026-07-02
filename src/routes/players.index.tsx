@@ -93,7 +93,10 @@ function PlayersSearch() {
               >
                 <PlayerAvatar id={p.id} firstName={p.firstName} lastName={p.lastName} />
                 <div className="min-w-0 flex-1">
-                  <div className="font-medium truncate">{p.fullName}</div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium truncate">{p.fullName}</span>
+                    <StatusBadge status={(p as any).status ?? "active"} />
+                  </div>
                   <div className="text-xs text-muted-foreground truncate">
                     {p.position && p.position !== "-" ? p.position : "-"}
                     {p.team && ` · ${p.team.abbr} ${p.team.name}`}
