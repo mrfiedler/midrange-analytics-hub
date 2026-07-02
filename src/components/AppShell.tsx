@@ -1,8 +1,11 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Home, Users, Shield, Swords, BarChart3, BookOpen, Settings, Search, Menu, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
-import logo from "@/assets/mrf-logo.png.asset.json";
 import { ModeToggle } from "@/components/ModeToggle";
+
+// Static path served from /public - works on Vercel, Lovable, or any host
+// without depending on the internal /__l5e/... proxy.
+const LOGO_URL = "/mrf-logo.png";
 
 const NAV = [
   { to: "/",          label: "Dashboard",              Icon: Home },
