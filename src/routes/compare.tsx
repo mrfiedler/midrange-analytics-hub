@@ -207,18 +207,26 @@ function Picker({ onPick, onClose }: { onPick: (id: number, name: string) => voi
           <button onClick={onClose} className="size-7 rounded-md hover:bg-surface-2 grid place-items-center text-muted-foreground"><X className="size-4" /></button>
         </div>
         <ul className="max-h-80 overflow-y-auto scrollbar-thin space-y-1">
-          {(mutation.data?.players ?? []).map((p) => (
-            <li key={p.id}>
-              <button
-                onClick={() => onPick(p.id, p.fullName)}
-                className="w-full flex items-center gap-3 rounded-md px-3 py-2 text-left text-sm hover:bg-surface-2"
-              >
-                <span className="size-2 rounded-full bg-flame" />
-                <span className="flex-1 truncate">{p.fullName}</span>
-                <span className="text-xs text-muted-foreground">{p.team?.abbr ?? "-"} · {p.position}</span>
-              </button>
-            </li>
-          ))}
+          {(mutation.data?.players ?? []).map((p) => {
+            const status = (p as any).status as "active" | "inactive" | undefined;
+            return (
+              <li key={p.id}>
+                <button
+                  onClick={() => onPick(p.id, p.fullName)}
+                  className="w-full flex items-center gap-3 rounded-md px-3 py-2 text-left text-sm hover:bg-surface-2"
+                >
+                  <span className={`size-2 rounded-full ${status === "inactive" ? "bg-muted-foreground/50" : "bg-flame"}`} />
+                  <span className="flex-1 truncate">{p.fullName}</span>
+                  {status === "inactive" && (
+                    <span className="rounded-full border border-hairline px-1.5 py-0.5 text-[9px] font-display uppercase tracking-widest text-muted-foreground">
+                      Fora da liga
+                    </span>
+                  )}
+                  <span className="text-xs text-muted-foreground">{p.team?.abbr ?? "-"} · {p.position}</span>
+                </button>
+              </li>
+            );
+          })}
           {q.trim().length >= 2 && (mutation.data?.players?.length ?? 0) === 0 && !mutation.isPending && (
             <li className="px-3 py-2 text-sm text-muted-foreground">Nenhum jogador encontrado.</li>
           )}
