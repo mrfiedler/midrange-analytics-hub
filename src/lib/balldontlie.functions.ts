@@ -245,7 +245,7 @@ export const searchPlayers = createServerFn({ method: "GET" })
       const terms = data.q.toLowerCase().split(/\s+/).filter(Boolean);
       const players = all.items
         .filter((p) => terms.every((term) => String(p.displayName ?? p.fullName ?? "").toLowerCase().includes(term)))
-        .slice(0, 25)
+        .slice(0, 30)
         .map((p) => ({
           id: Number(p.id),
           firstName: p.firstName ?? "",
@@ -256,7 +256,15 @@ export const searchPlayers = createServerFn({ method: "GET" })
           weight: p.displayWeight ? String(p.displayWeight).replace(/\s*lbs?$/i, "") : p.weight ? String(p.weight) : null,
           jersey: p.jersey ?? null,
           team: p.team ? { id: ESPN_TO_BDL_TEAM[String(p.team.id)] ?? Number(p.team.id), abbr: p.team.abbreviation, name: p.team.displayName } : null,
-        }));
+          // "active" quando tem time atual atribuído na ESPN (rostered). Caso
+          // contrário tratamos como "inactive" (aposentado, agente livre, staff
+          // sem carreira de jogador etc). Mantemos ambos na lista - a UI
+          // diferencia visualmente via badge.
+          status: p.team ? ("active" as const) : ("inactive" as const),
+        }))
+        // Ordena ativos primeiro, mantendo aposentados/históricos visíveis.
+        .sort((a, b) => (a.status === b.status ? 0 : a.status === "active" ? -1 : 1))
+        .slice(0, 25);
       if (players.length > 0) return { ok: true as const, players };
 
       const res = await bdl<{ data: Array<{ id: number; first_name: string; last_name: string; position: string | null; height: string | null; weight: string | null; jersey_number: string | null; team: { id: number; abbreviation: string; full_name: string } | null; }>; }>(`/players`, { search: data.q, per_page: 25 });
@@ -272,6 +280,7 @@ export const searchPlayers = createServerFn({ method: "GET" })
           weight: p.weight || null,
           jersey: p.jersey_number || null,
           team: p.team ? { id: p.team.id, abbr: p.team.abbreviation, name: p.team.full_name } : null,
+          status: (p.team ? "active" : "inactive") as "active" | "inactive",
         })),
       };
     } catch (err) {
