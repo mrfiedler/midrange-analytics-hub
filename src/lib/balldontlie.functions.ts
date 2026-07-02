@@ -1,3 +1,17 @@
+/**
+ * Multi-source NBA data layer.
+ *
+ * Fonte primária de estatísticas/médias: ESPN + Basketball-Reference (scraping).
+ * balldontlie é usada apenas como fallback final.
+ *
+ * IMPORTANTE (limitação real do plano FREE da balldontlie):
+ *   - Free: apenas /teams, /players, /games (5 req/min).
+ *   - ALL-STAR ($9.99/mês): + /stats.
+ *   - GOAT ($39.99/mês): + /season_averages, standings, box scores completos.
+ * Ou seja, no free tier a balldontlie NÃO fornece médias de temporada nem
+ * box scores. Só faz sentido promovê-la a fonte primária de stats no dia em
+ * que o plano for pago; até lá ESPN + BBR são obrigatórios.
+ */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { cached } from "@/lib/server-cache";
