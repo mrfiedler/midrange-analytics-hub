@@ -322,9 +322,9 @@ export const getPlayerProfile = createServerFn({ method: "GET" })
     try {
       const player = await getEspnPlayerProfile(data.id, season);
       const seasonsToTry = [season, ...Array.from({ length: Math.min(20, season - 1979) }, (_, i) => season - i - 1)];
-      let averages: Awaited<ReturnType<typeof getEspnPlayerStats>> = null;
-      let partial: typeof averages = null;
-      let statSeason = season;
+      type Averages = NonNullable<Awaited<ReturnType<typeof getEspnPlayerStats>>>;
+      let averages: Averages | null = null;
+      let partial: Averages | null = null;
       let partialSeason = season;
       for (const candidate of seasonsToTry) {
         const row = await getEspnPlayerStats(data.id, candidate).catch(() => null);
