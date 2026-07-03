@@ -75,18 +75,18 @@ export function lookupNbaId(firstName: string, lastName: string): number | null 
   return NBA_ID_MAP[key] ?? null;
 }
 
-export function PlayerAvatar({ id, firstName, lastName, size = "sm" }: Props) {
-  const [stage, setStage] = useState<0 | 1 | 2>(0);
+export function PlayerAvatar({ id: _id, firstName, lastName, size = "sm" }: Props) {
+  const [failed, setFailed] = useState(false);
   const initials = `${firstName?.[0] ?? ""}${lastName?.[0] ?? ""}`.toUpperCase();
   const nbaId = lookupNbaId(firstName, lastName);
   const cls = `${SIZES[size]} rounded-full grid place-items-center shrink-0 overflow-hidden`;
 
-  // Source chain: NBA CDN (mapped) → ESPN CDN (by id) → initials
-  const sources: string[] = [];
-  if (nbaId) sources.push(`https://cdn.nba.com/headshots/nba/latest/1040x760/${nbaId}.png`);
-  if (id) sources.push(`https://a.espncdn.com/i/headshots/nba/players/full/${id}.png`);
-
-  const src = sources[stage];
+  // Source: NBA CDN when we have a name-mapped NBA id, otherwise initials.
+  // We do NOT use the incoming `id` as an ESPN CDN key here: it's a
+  // balldontlie id, which does NOT match ESPN's id space.
+  const src = nbaId && !failed
+    ? `https://cdn.nba.com/headshots/nba/latest/1040x760/${nbaId}.png`
+    : null;
 
   if (!src) {
     return <div className={`${cls} flame-bg text-white font-display`}>{initials}</div>;
@@ -98,7 +98,7 @@ export function PlayerAvatar({ id, firstName, lastName, size = "sm" }: Props) {
         src={src}
         alt={`${firstName} ${lastName}`}
         loading="lazy"
-        onError={() => setStage((s) => (s + 1) as 0 | 1 | 2)}
+        onError={() => setFailed(true)}
         className="size-full object-cover"
       />
     </div>

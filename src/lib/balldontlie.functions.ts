@@ -122,11 +122,21 @@ function num(value: string) {
   return Number.isFinite(n) ? n : 0;
 }
 
+function normalizeName(s: string) {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 async function getBasketballReferenceRoster(teamId: number, season: number) {
   const abbr = BDL_TO_BBR_TEAM[teamId];
   if (!abbr) return null;
   const endYear = season + 1;
-  const html = await cached(`bbr:team:${abbr}:${endYear}`, 12 * 60 * 60_000, async () => {
+  const html = await cached(`bbr:team:${abbr}:${endYear}`, 6 * 60 * 60_000, async () => {
     const res = await fetch(`https://www.basketball-reference.com/teams/${abbr}/${endYear}.html`, {
       headers: BBR_HEADERS,
       signal: AbortSignal.timeout(12_000),
@@ -149,8 +159,8 @@ async function getBasketballReferenceRoster(teamId: number, season: number) {
       lastName: name.split(" ").slice(1).join(" "),
       fullName: name,
       position: cell(row, "pos") || "-",
-      height: null,
-      jersey: null,
+      height: null as string | null,
+      jersey: null as string | null,
       average: {
         player_id: id,
         games_played: num(cell(row, "games")),
@@ -178,6 +188,31 @@ async function getBasketballReferenceRoster(teamId: number, season: number) {
     };
   }).filter((p) => p.fullName && p.fullName !== "Player");
   return players.length ? players : null;
+}
+
+/**
+ * Reusable per-player season stats via Basketball-Reference team page.
+ * Cached by team+season via getBasketballReferenceRoster; matching one
+ * player = at most one HTTP roundtrip per (team, season) tuple.
+ */
+async function getPlayerSeasonStats(
+  firstName: string,
+  lastName: string,
+  teamId: number,
+  season: number,
+) {
+  const roster = await getBasketballReferenceRoster(teamId, season).catch(() => null);
+  if (!roster?.length) return null;
+  const target = normalizeName(`${firstName} ${lastName}`);
+  const first = normalizeName(firstName);
+  const last = normalizeName(lastName);
+  const exact = roster.find((p) => normalizeName(p.fullName) === target);
+  if (exact) return exact.average;
+  const fuzzy = roster.find((p) => {
+    const n = normalizeName(p.fullName);
+    return n.endsWith(` ${last}`) && (first ? n.startsWith(first[0]) : true);
+  });
+  return fuzzy?.average ?? null;
 }
 
 async function getEspnPlayerStats(id: number, season: number) {
@@ -240,37 +275,27 @@ const SearchInput = z.object({
 export const searchPlayers = createServerFn({ method: "GET" })
   .inputValidator((d) => SearchInput.parse(d))
   .handler(async ({ data }) => {
+    // Primary: balldontlie /players?search - full-text search over the entire
+    // player database. We ALWAYS return the balldontlie id so every downstream
+    // route (`/players/:id`, compare slots, PlayerAvatar) has one stable id
+    // space. Do NOT fall back to ESPN ids here: mixing id spaces was the
+    // bug where clicking "Luka Doncic" opened /players/132.
     try {
-      const all = await fetchJson<{ items: any[] }>("https://sports.core.api.espn.com/v3/sports/basketball/nba/athletes?limit=1000", 6 * 60 * 60_000);
-      const terms = data.q.toLowerCase().split(/\s+/).filter(Boolean);
-      const players = all.items
-        .filter((p) => terms.every((term) => String(p.displayName ?? p.fullName ?? "").toLowerCase().includes(term)))
-        .slice(0, 30)
-        .map((p) => ({
-          id: Number(p.id),
-          firstName: p.firstName ?? "",
-          lastName: p.lastName ?? "",
-          fullName: p.displayName ?? p.fullName ?? `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim(),
-          position: p.position?.abbreviation ?? p.position?.displayName ?? "-",
-          height: p.displayHeight ?? null,
-          weight: p.displayWeight ? String(p.displayWeight).replace(/\s*lbs?$/i, "") : p.weight ? String(p.weight) : null,
-          jersey: p.jersey ?? null,
-          team: p.team ? { id: ESPN_TO_BDL_TEAM[String(p.team.id)] ?? Number(p.team.id), abbr: p.team.abbreviation, name: p.team.displayName } : null,
-          // "active" quando tem time atual atribuído na ESPN (rostered). Caso
-          // contrário tratamos como "inactive" (aposentado, agente livre, staff
-          // sem carreira de jogador etc). Mantemos ambos na lista - a UI
-          // diferencia visualmente via badge.
-          status: p.team ? ("active" as const) : ("inactive" as const),
-        }))
-        // Ordena ativos primeiro, mantendo aposentados/históricos visíveis.
-        .sort((a, b) => (a.status === b.status ? 0 : a.status === "active" ? -1 : 1))
-        .slice(0, 25);
-      if (players.length > 0) return { ok: true as const, players };
+      const res = await bdl<{
+        data: Array<{
+          id: number;
+          first_name: string;
+          last_name: string;
+          position: string | null;
+          height: string | null;
+          weight: string | null;
+          jersey_number: string | null;
+          team: { id: number; abbreviation: string; full_name: string } | null;
+        }>;
+      }>(`/players`, { search: data.q, per_page: 25 });
 
-      const res = await bdl<{ data: Array<{ id: number; first_name: string; last_name: string; position: string | null; height: string | null; weight: string | null; jersey_number: string | null; team: { id: number; abbreviation: string; full_name: string } | null; }>; }>(`/players`, { search: data.q, per_page: 25 });
-      return {
-        ok: true as const,
-        players: res.data.map((p) => ({
+      const players = res.data
+        .map((p) => ({
           id: p.id,
           firstName: p.first_name,
           lastName: p.last_name,
@@ -279,10 +304,14 @@ export const searchPlayers = createServerFn({ method: "GET" })
           height: p.height || null,
           weight: p.weight || null,
           jersey: p.jersey_number || null,
-          team: p.team ? { id: p.team.id, abbr: p.team.abbreviation, name: p.team.full_name } : null,
-          status: (p.team ? "active" : "inactive") as "active" | "inactive",
-        })),
-      };
+          team: p.team && p.team.id
+            ? { id: p.team.id, abbr: p.team.abbreviation, name: p.team.full_name }
+            : null,
+          status: (p.team && p.team.id ? "active" : "inactive") as "active" | "inactive",
+        }))
+        .sort((a, b) => (a.status === b.status ? 0 : a.status === "active" ? -1 : 1));
+
+      return { ok: true as const, players };
     } catch (err) {
       console.error("searchPlayers", err);
       return { ok: false as const, players: [], error: (err as Error).message };
@@ -295,6 +324,29 @@ const PlayerInput = z.object({
   id: z.number().int().positive(),
   season: z.number().int().min(1979).max(2100).optional(),
 });
+
+/**
+ * Given a player name, resolve the ESPN athlete id via the cached
+ * top-1000 athletes list. Used ONLY as a tertiary fallback for stats
+ * when Basketball-Reference doesn't have the player's current team page.
+ * The id is never exposed to the frontend.
+ */
+async function resolveEspnAthleteId(firstName: string, lastName: string): Promise<number | null> {
+  try {
+    const all = await fetchJson<{ items: any[] }>(
+      "https://sports.core.api.espn.com/v3/sports/basketball/nba/athletes?limit=1000",
+      6 * 60 * 60_000,
+    );
+    const target = normalizeName(`${firstName} ${lastName}`);
+    const hit = all.items.find((p: any) => {
+      const name = normalizeName(String(p.displayName ?? p.fullName ?? `${p.firstName ?? ""} ${p.lastName ?? ""}`));
+      return name === target;
+    });
+    return hit ? Number(hit.id) : null;
+  } catch {
+    return null;
+  }
+}
 
 export const getPlayerProfile = createServerFn({ method: "GET" })
   .inputValidator((d) => PlayerInput.parse(d))
@@ -309,9 +361,6 @@ export const getPlayerProfile = createServerFn({ method: "GET" })
       season: opts.statSeason,
       seasonLabel: seasonLabel(opts.statSeason),
       gamesPlayed: opts.gamesPlayed,
-      // "season"  = amostra completa/representativa (>= 10 jogos)
-      // "partial" = temporada em andamento com poucos jogos - avisar na UI
-      // "none"    = sem dados
       sampleType:
         opts.gamesPlayed >= 10 ? "season" as const
         : opts.gamesPlayed > 0 ? "partial" as const
@@ -319,120 +368,114 @@ export const getPlayerProfile = createServerFn({ method: "GET" })
       source: opts.source,
     });
 
+    // 1) Identity + current team come from balldontlie (which is what
+    //    /players/:id URLs carry). It also reflects mid-season trades.
+    type BdlPlayer = {
+      id: number;
+      first_name: string;
+      last_name: string;
+      position: string | null;
+      height: string | null;
+      weight: string | null;
+      jersey_number: string | null;
+      college: string | null;
+      country: string | null;
+      draft_year: number | null;
+      draft_round: number | null;
+      draft_number: number | null;
+      team: { id: number; abbreviation: string; full_name: string } | null;
+    };
+    let bdlPlayer: BdlPlayer | null = null;
     try {
-      const player = await getEspnPlayerProfile(data.id, season);
-      const seasonsToTry = [season, ...Array.from({ length: Math.min(20, season - 1979) }, (_, i) => season - i - 1)];
-      type Averages = NonNullable<Awaited<ReturnType<typeof getEspnPlayerStats>>>;
-      let averages: Averages | null = null;
-      let partial: Averages | null = null;
-      let statSeason = season;
-      let partialSeason = season;
-      for (const candidate of seasonsToTry) {
-        const row = await getEspnPlayerStats(data.id, candidate).catch(() => null);
-        if (!row) continue;
-        // Só aceita como "temporada válida" com >= 10 jogos. Se vier menos,
-        // guarda como fallback partial mas continua tentando temporada anterior
-        // com amostra maior.
-        if ((row.games_played ?? 0) >= 10) {
-          averages = row;
-          statSeason = candidate;
-          break;
-        }
-        if (!partial) {
-          partial = row;
-          partialSeason = candidate;
-        }
-      }
-      if (!averages && partial) {
-        averages = partial;
-        statSeason = partialSeason;
-      }
-      const meta = buildMeta({
-        statSeason,
-        gamesPlayed: averages?.games_played ?? 0,
-        source: averages ? "ESPN" : "none",
-      });
-      return { ok: true as const, season: statSeason, player, averages, meta };
-    } catch (espnErr) {
-      console.warn("getPlayerProfile ESPN fallback", espnErr);
+      const resp = await bdl<{ data: BdlPlayer }>(`/players/${data.id}`);
+      bdlPlayer = resp.data;
+    } catch (err) {
+      console.warn("getPlayerProfile bdl identity failed", err);
     }
 
-    try {
-      const player = await bdl<{
-        data: {
-          id: number;
-          first_name: string;
-          last_name: string;
-          position: string | null;
-          height: string | null;
-          weight: string | null;
-          jersey_number: string | null;
-          college: string | null;
-          country: string | null;
-          draft_year: number | null;
-          draft_round: number | null;
-          draft_number: number | null;
-          team: { id: number; abbreviation: string; full_name: string } | null;
-        };
-      }>(`/players/${data.id}`);
-
-      let averages: any = null;
-      try {
-        const avg = await bdl<{
-          data: Array<{
-            games_played: number; min: string;
-            pts: number; reb: number; ast: number; stl: number; blk: number;
-            turnover: number; pf: number;
-            fgm: number; fga: number; fg_pct: number;
-            fg3m: number; fg3a: number; fg3_pct: number;
-            ftm: number; fta: number; ft_pct: number;
-            oreb: number; dreb: number;
-            season: number;
-          }>;
-        }>(`/season_averages`, { "season": season, "player_ids[]": data.id });
-        averages = avg.data[0] ?? null;
-      } catch {
-        averages = null;
-      }
-
-      const p = player.data;
-      return {
-        ok: true as const,
-        season,
-        player: {
-          id: p.id,
-          firstName: p.first_name,
-          lastName: p.last_name,
-          fullName: `${p.first_name} ${p.last_name}`.trim(),
-          position: p.position || "-",
-          height: p.height || null,
-          weight: p.weight || null,
-          jersey: p.jersey_number || null,
-          college: p.college,
-          country: p.country,
-          draftYear: p.draft_year,
-          draftRound: p.draft_round,
-          draftNumber: p.draft_number,
-          team: p.team ? { id: p.team.id, abbr: p.team.abbreviation, name: p.team.full_name } : null,
-        },
-        averages,
-        meta: buildMeta({
-          statSeason: season,
-          gamesPlayed: averages?.games_played ?? 0,
-          source: averages ? "balldontlie" : "none",
-        }),
-      };
-    } catch (err) {
-      console.error("getPlayerProfile", err);
+    if (!bdlPlayer) {
       return {
         ok: false as const,
-        error: (err as Error).message,
-        season: data.season ?? getCurrentSeason(),
+        error: "Jogador não encontrado.",
+        season,
         player: null,
         averages: null,
-        meta: buildMeta({ statSeason: data.season ?? getCurrentSeason(), gamesPlayed: 0, source: "none" }),
+        meta: buildMeta({ statSeason: season, gamesPlayed: 0, source: "none" }),
       };
     }
+
+    const player = {
+      id: bdlPlayer.id,
+      firstName: bdlPlayer.first_name,
+      lastName: bdlPlayer.last_name,
+      fullName: `${bdlPlayer.first_name} ${bdlPlayer.last_name}`.trim(),
+      position: bdlPlayer.position || "-",
+      height: bdlPlayer.height || null,
+      weight: bdlPlayer.weight || null,
+      jersey: bdlPlayer.jersey_number || null,
+      college: bdlPlayer.college,
+      country: bdlPlayer.country,
+      draftYear: bdlPlayer.draft_year,
+      draftRound: bdlPlayer.draft_round,
+      draftNumber: bdlPlayer.draft_number,
+      team: bdlPlayer.team && bdlPlayer.team.id
+        ? { id: bdlPlayer.team.id, abbr: bdlPlayer.team.abbreviation, name: bdlPlayer.team.full_name }
+        : null,
+    };
+
+    // 2) Primary stats source: Basketball-Reference team page (reliable,
+    //    structured, works for current + past seasons).
+    type Averages = NonNullable<Awaited<ReturnType<typeof getPlayerSeasonStats>>>;
+    const seasonsToTry = [season, ...Array.from({ length: Math.min(20, season - 1979) }, (_, i) => season - i - 1)];
+    let averages: Averages | null = null;
+    let partial: Averages | null = null;
+    let statSeason = season;
+    let partialSeason = season;
+    let source: "Basketball-Reference" | "ESPN" | "none" = "none";
+
+    if (player.team) {
+      for (const candidate of seasonsToTry) {
+        const row = await getPlayerSeasonStats(player.firstName, player.lastName, player.team.id, candidate).catch(() => null);
+        if (!row) continue;
+        if ((row.games_played ?? 0) >= 10) {
+          averages = row; statSeason = candidate; source = "Basketball-Reference"; break;
+        }
+        if (!partial) { partial = row; partialSeason = candidate; source = "Basketball-Reference"; }
+      }
+    }
+
+    // 3) Tertiary fallback: ESPN, only when BBR has nothing (retired
+    //    player, no current team, or team page missing the season).
+    if (!averages) {
+      const espnId = await resolveEspnAthleteId(player.firstName, player.lastName);
+      if (espnId) {
+        for (const candidate of seasonsToTry) {
+          const row = await getEspnPlayerStats(espnId, candidate).catch(() => null);
+          if (!row) continue;
+          if ((row.games_played ?? 0) >= 10) {
+            averages = row as Averages; statSeason = candidate; source = "ESPN"; break;
+          }
+          if (!partial) { partial = row as Averages; partialSeason = candidate; source = "ESPN"; }
+        }
+      }
+    }
+
+    if (!averages && partial) {
+      averages = partial;
+      statSeason = partialSeason;
+    }
+
+    return {
+      ok: true as const,
+      season: statSeason,
+      player,
+      averages,
+      meta: buildMeta({
+        statSeason,
+        gamesPlayed: averages?.games_played ?? 0,
+        source: averages ? source : "none",
+      }),
+    };
   });
 
 /* ---------- Team roster ---------- */
@@ -447,8 +490,11 @@ export const getTeamRoster = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     try {
       const espn = BDL_TO_ESPN_TEAM[data.teamId];
-      const season = data.season ?? 2025;
-      const bbrRoster = season < getCurrentSeason() ? await getBasketballReferenceRoster(data.teamId, season).catch(() => null) : null;
+      const season = data.season ?? getCurrentSeason();
+      // Basketball-Reference is now the primary roster source for EVERY
+      // season (current + historical), because it carries per-game
+      // averages we can surface in the team page.
+      const bbrRoster = await getBasketballReferenceRoster(data.teamId, season).catch(() => null);
       if (bbrRoster?.length) {
         return { ok: true as const, players: bbrRoster };
       }

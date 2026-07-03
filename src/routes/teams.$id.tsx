@@ -177,12 +177,24 @@ function TeamDetail() {
                   <th className="px-4 py-3">#</th>
                   <th className="px-4 py-3">Jogador</th>
                   <th className="px-4 py-3">Pos</th>
-                  <th className="px-4 py-3 hidden sm:table-cell">Altura</th>
+                  <th className="px-4 py-3 hidden md:table-cell">Altura</th>
+                  <th className="px-4 py-3 text-right tabular-nums">PPG</th>
+                  <th className="px-4 py-3 text-right tabular-nums hidden sm:table-cell">RPG</th>
+                  <th className="px-4 py-3 text-right tabular-nums hidden sm:table-cell">APG</th>
                   <th className="px-4 py-3 text-right">Perfil</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-hairline">
-                {roster.map((p: { id: number; firstName: string; lastName: string; fullName: string; position: string; height?: string | null; jersey?: string | null }) => (
+                {roster.map((p: {
+                  id: number;
+                  firstName: string;
+                  lastName: string;
+                  fullName: string;
+                  position: string;
+                  height?: string | null;
+                  jersey?: string | null;
+                  average?: { pts: number; reb: number; ast: number; games_played: number } | null;
+                }) => (
                   <tr key={p.id} className="hover:bg-surface-2/60">
                     <td className="px-4 py-3 text-amber font-display">{p.jersey ?? "-"}</td>
                     <td className="px-4 py-3 font-medium">
@@ -192,9 +204,16 @@ function TeamDetail() {
                       </div>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">{p.position}</td>
-                    <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell">{p.height ?? "-"}</td>
+                    <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{p.height ?? "-"}</td>
+                    <td className="px-4 py-3 text-right tabular-nums">{p.average ? p.average.pts.toFixed(1) : "-"}</td>
+                    <td className="px-4 py-3 text-right tabular-nums hidden sm:table-cell">{p.average ? p.average.reb.toFixed(1) : "-"}</td>
+                    <td className="px-4 py-3 text-right tabular-nums hidden sm:table-cell">{p.average ? p.average.ast.toFixed(1) : "-"}</td>
                     <td className="px-4 py-3 text-right">
-                      <Link to="/players/$id" params={{ id: String(p.id) }} className="text-flame text-xs hover:underline">Ver →</Link>
+                      {p.id < 100_000_000 ? (
+                        <Link to="/players/$id" params={{ id: String(p.id) }} className="text-flame text-xs hover:underline">Ver →</Link>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">-</span>
+                      )}
                     </td>
                   </tr>
                 ))}
