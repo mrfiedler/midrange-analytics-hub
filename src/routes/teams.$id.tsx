@@ -209,7 +209,11 @@ function TeamDetail() {
                     <td className="px-4 py-3 text-right tabular-nums hidden sm:table-cell">{p.average ? p.average.reb.toFixed(1) : "-"}</td>
                     <td className="px-4 py-3 text-right tabular-nums hidden sm:table-cell">{p.average ? p.average.ast.toFixed(1) : "-"}</td>
                     <td className="px-4 py-3 text-right">
-                      <Link to="/players/$id" params={{ id: String(p.id) }} className="text-flame text-xs hover:underline">Ver →</Link>
+                      {p.id < 100_000_000 ? (
+                        <Link to="/players/$id" params={{ id: String(p.id) }} className="text-flame text-xs hover:underline">Ver →</Link>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">-</span>
+                      )}
                     </td>
                   </tr>
                 ))}
