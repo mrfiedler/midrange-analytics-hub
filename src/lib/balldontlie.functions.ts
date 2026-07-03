@@ -490,8 +490,11 @@ export const getTeamRoster = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     try {
       const espn = BDL_TO_ESPN_TEAM[data.teamId];
-      const season = data.season ?? 2025;
-      const bbrRoster = season < getCurrentSeason() ? await getBasketballReferenceRoster(data.teamId, season).catch(() => null) : null;
+      const season = data.season ?? getCurrentSeason();
+      // Basketball-Reference is now the primary roster source for EVERY
+      // season (current + historical), because it carries per-game
+      // averages we can surface in the team page.
+      const bbrRoster = await getBasketballReferenceRoster(data.teamId, season).catch(() => null);
       if (bbrRoster?.length) {
         return { ok: true as const, players: bbrRoster };
       }
