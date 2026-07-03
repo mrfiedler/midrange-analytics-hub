@@ -122,11 +122,21 @@ function num(value: string) {
   return Number.isFinite(n) ? n : 0;
 }
 
+function normalizeName(s: string) {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 async function getBasketballReferenceRoster(teamId: number, season: number) {
   const abbr = BDL_TO_BBR_TEAM[teamId];
   if (!abbr) return null;
   const endYear = season + 1;
-  const html = await cached(`bbr:team:${abbr}:${endYear}`, 12 * 60 * 60_000, async () => {
+  const html = await cached(`bbr:team:${abbr}:${endYear}`, 6 * 60 * 60_000, async () => {
     const res = await fetch(`https://www.basketball-reference.com/teams/${abbr}/${endYear}.html`, {
       headers: BBR_HEADERS,
       signal: AbortSignal.timeout(12_000),
@@ -149,8 +159,8 @@ async function getBasketballReferenceRoster(teamId: number, season: number) {
       lastName: name.split(" ").slice(1).join(" "),
       fullName: name,
       position: cell(row, "pos") || "-",
-      height: null,
-      jersey: null,
+      height: null as string | null,
+      jersey: null as string | null,
       average: {
         player_id: id,
         games_played: num(cell(row, "games")),
@@ -178,6 +188,31 @@ async function getBasketballReferenceRoster(teamId: number, season: number) {
     };
   }).filter((p) => p.fullName && p.fullName !== "Player");
   return players.length ? players : null;
+}
+
+/**
+ * Reusable per-player season stats via Basketball-Reference team page.
+ * Cached by team+season via getBasketballReferenceRoster; matching one
+ * player = at most one HTTP roundtrip per (team, season) tuple.
+ */
+async function getPlayerSeasonStats(
+  firstName: string,
+  lastName: string,
+  teamId: number,
+  season: number,
+) {
+  const roster = await getBasketballReferenceRoster(teamId, season).catch(() => null);
+  if (!roster?.length) return null;
+  const target = normalizeName(`${firstName} ${lastName}`);
+  const first = normalizeName(firstName);
+  const last = normalizeName(lastName);
+  const exact = roster.find((p) => normalizeName(p.fullName) === target);
+  if (exact) return exact.average;
+  const fuzzy = roster.find((p) => {
+    const n = normalizeName(p.fullName);
+    return n.endsWith(` ${last}`) && (first ? n.startsWith(first[0]) : true);
+  });
+  return fuzzy?.average ?? null;
 }
 
 async function getEspnPlayerStats(id: number, season: number) {
