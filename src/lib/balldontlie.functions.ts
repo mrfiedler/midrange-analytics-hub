@@ -370,7 +370,7 @@ export const getPlayerProfile = createServerFn({ method: "GET" })
 
     // 1) Identity + current team come from balldontlie (which is what
     //    /players/:id URLs carry). It also reflects mid-season trades.
-    let bdlPlayer: {
+    type BdlPlayer = {
       id: number;
       first_name: string;
       last_name: string;
@@ -384,9 +384,10 @@ export const getPlayerProfile = createServerFn({ method: "GET" })
       draft_round: number | null;
       draft_number: number | null;
       team: { id: number; abbreviation: string; full_name: string } | null;
-    } | null = null;
+    };
+    let bdlPlayer: BdlPlayer | null = null;
     try {
-      const resp = await bdl<{ data: typeof bdlPlayer }>(`/players/${data.id}`);
+      const resp = await bdl<{ data: BdlPlayer }>(`/players/${data.id}`);
       bdlPlayer = resp.data;
     } catch (err) {
       console.warn("getPlayerProfile bdl identity failed", err);
