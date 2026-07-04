@@ -15,7 +15,7 @@ import { z } from "zod";
 import { cached } from "@/lib/server-cache";
 import { getCurrentSeason } from "@/lib/season";
 
-const BASE = "https://api.balldontlie.io/v1";
+
 
 const ESPN_HEADERS = {
   "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
