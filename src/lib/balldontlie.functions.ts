@@ -243,25 +243,6 @@ async function getEspnPlayerProfile(id: number, season: number) {
   };
 }
 
-async function bdl<T>(path: string, params: Record<string, string | number | undefined> = {}, ttlMs = 5 * 60_000): Promise<T> {
-  const apiKey = process.env.BALLDONTLIE_API_KEY;
-  if (!apiKey) {
-    throw new Error("BALLDONTLIE_API_KEY não configurada no servidor.");
-  }
-  const url = new URL(`${BASE}${path}`);
-  Object.entries(params).forEach(([k, v]) => {
-    if (v !== undefined && v !== null && v !== "") url.searchParams.set(k, String(v));
-  });
-
-  return cached(`bdl:${url.toString()}`, ttlMs, async () => {
-    const res = await fetch(url.toString(), { headers: { Authorization: apiKey } });
-    if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      throw new Error(`balldontlie ${res.status}: ${text.slice(0, 200)}`);
-    }
-    return (await res.json()) as T;
-  });
-}
 
 
 /* ---------- Player Search (ESPN) ---------- */
