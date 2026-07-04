@@ -57,7 +57,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="px-4 py-3 border-t border-hairline text-[10px] uppercase tracking-widest text-muted-foreground/70">
           <span className="inline-flex items-center gap-2">
             <span className="size-1.5 rounded-full bg-flame pulse-dot" />
-            v1.0 · powered by balldontlie
+            v1.0 · powered by ESPN
           </span>
         </div>
       </aside>
@@ -104,7 +104,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <Header onOpenMenu={() => setMobileOpen(true)} />
         <main className="flex-1 min-w-0 p-4 sm:p-5 md:p-8">{children}</main>
         <footer className="px-4 sm:px-5 md:px-8 py-5 border-t border-hairline text-[11px] text-muted-foreground/70 flex flex-wrap items-center gap-3 justify-between">
-          <span>Dados: balldontlie.io · Estatísticas atualizadas diariamente</span>
+          <span>Dados: ESPN · Estatísticas atualizadas diariamente</span>
           <span className="font-display uppercase tracking-widest">midrange · frenzy</span>
         </footer>
       </div>

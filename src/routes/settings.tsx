@@ -46,7 +46,7 @@ function SettingsPage() {
         <div className="eyebrow">Sobre</div>
         <h2 className="font-display text-xl mt-1">Midrange Frenzy</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Plataforma open-source de análise NBA em português. Dados via balldontlie.io.
+          Plataforma open-source de análise NBA em português. Dados via ESPN.
         </p>
       </section>
     </div>

@@ -1,23 +1,21 @@
 /**
- * Multi-source NBA data layer.
+ * NBA data layer.
  *
- * Fonte primária de estatísticas/médias: ESPN + Basketball-Reference (scraping).
- * balldontlie é usada apenas como fallback final.
+ * Fonte primária de identidade, roster e estatística: ESPN
+ * (`sports.core.api.espn.com` / `site.api.espn.com` / `site.web.api.espn.com`).
+ * Basketball-Reference é usada apenas para enriquecer o roster do time com
+ * médias por jogo (PPG/RPG/APG).
  *
- * IMPORTANTE (limitação real do plano FREE da balldontlie):
- *   - Free: apenas /teams, /players, /games (5 req/min).
- *   - ALL-STAR ($9.99/mês): + /stats.
- *   - GOAT ($39.99/mês): + /season_averages, standings, box scores completos.
- * Ou seja, no free tier a balldontlie NÃO fornece médias de temporada nem
- * box scores. Só faz sentido promovê-la a fonte primária de stats no dia em
- * que o plano for pago; até lá ESPN + BBR são obrigatórios.
+ * balldontlie NÃO é usada em nenhum fluxo (a API free não sustenta a
+ * cadeia de identidade/roster e mistura de ID spaces gera bugs). A env var
+ * pode continuar configurada, mas nenhum caminho do código a chama.
  */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { cached } from "@/lib/server-cache";
 import { getCurrentSeason } from "@/lib/season";
 
-const BASE = "https://api.balldontlie.io/v1";
+
 
 const ESPN_HEADERS = {
   "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
@@ -245,70 +243,63 @@ async function getEspnPlayerProfile(id: number, season: number) {
   };
 }
 
-async function bdl<T>(path: string, params: Record<string, string | number | undefined> = {}, ttlMs = 5 * 60_000): Promise<T> {
-  const apiKey = process.env.BALLDONTLIE_API_KEY;
-  if (!apiKey) {
-    throw new Error("BALLDONTLIE_API_KEY não configurada no servidor.");
-  }
-  const url = new URL(`${BASE}${path}`);
-  Object.entries(params).forEach(([k, v]) => {
-    if (v !== undefined && v !== null && v !== "") url.searchParams.set(k, String(v));
-  });
-
-  return cached(`bdl:${url.toString()}`, ttlMs, async () => {
-    const res = await fetch(url.toString(), { headers: { Authorization: apiKey } });
-    if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      throw new Error(`balldontlie ${res.status}: ${text.slice(0, 200)}`);
-    }
-    return (await res.json()) as T;
-  });
-}
 
 
-/* ---------- Player Search ---------- */
+/* ---------- Player Search (ESPN) ---------- */
 
 const SearchInput = z.object({
   q: z.string().min(1).max(60),
 });
 
+type EspnSearchItem = {
+  id: string;
+  displayName?: string;
+  shortName?: string;
+  type?: string;
+};
+
+async function hydrateEspnPlayer(id: number) {
+  try {
+    const profile = await getEspnPlayerProfile(id, getCurrentSeason());
+    return profile;
+  } catch {
+    return null;
+  }
+}
+
 export const searchPlayers = createServerFn({ method: "GET" })
   .inputValidator((d) => SearchInput.parse(d))
   .handler(async ({ data }) => {
-    // Primary: balldontlie /players?search - full-text search over the entire
-    // player database. We ALWAYS return the balldontlie id so every downstream
-    // route (`/players/:id`, compare slots, PlayerAvatar) has one stable id
-    // space. Do NOT fall back to ESPN ids here: mixing id spaces was the
-    // bug where clicking "Luka Doncic" opened /players/132.
+    // Fonte primária: ESPN search (`site.web.api.espn.com`). Retorna o ID
+    // real da ESPN, que é o mesmo usado em `/players/:id`, no PlayerAvatar
+    // e no roster do time (mesmo id space em todo o app).
     try {
-      const res = await bdl<{
-        data: Array<{
-          id: number;
-          first_name: string;
-          last_name: string;
-          position: string | null;
-          height: string | null;
-          weight: string | null;
-          jersey_number: string | null;
-          team: { id: number; abbreviation: string; full_name: string } | null;
-        }>;
-      }>(`/players`, { search: data.q, per_page: 25 });
+      const url = `https://site.web.api.espn.com/apis/common/v3/search?query=${encodeURIComponent(data.q)}&type=player&sport=basketball&league=nba&limit=25`;
+      const json = await fetchJson<{ items?: EspnSearchItem[] }>(url, 15 * 60_000);
+      const items = (json.items ?? []).filter((it) => it.type === "player" && it.id);
 
-      const players = res.data
-        .map((p) => ({
-          id: p.id,
-          firstName: p.first_name,
-          lastName: p.last_name,
-          fullName: `${p.first_name} ${p.last_name}`.trim(),
-          position: p.position || "-",
-          height: p.height || null,
-          weight: p.weight || null,
-          jersey: p.jersey_number || null,
-          team: p.team && p.team.id
-            ? { id: p.team.id, abbr: p.team.abbreviation, name: p.team.full_name }
-            : null,
-          status: (p.team && p.team.id ? "active" : "inactive") as "active" | "inactive",
-        }))
+      // Hidrata os primeiros 15 pra ter time/posição na listagem.
+      const top = items.slice(0, 15);
+      const hydrated = await Promise.all(top.map((it) => hydrateEspnPlayer(Number(it.id))));
+
+      const players = top.map((it, idx) => {
+        const h = hydrated[idx];
+        const name = h?.fullName || it.displayName || "";
+        const [firstName, ...rest] = name.split(" ");
+        return {
+          id: Number(it.id),
+          firstName: h?.firstName ?? firstName ?? "",
+          lastName: h?.lastName ?? rest.join(" "),
+          fullName: name,
+          position: h?.position ?? "-",
+          height: h?.height ?? null,
+          weight: h?.weight ?? null,
+          jersey: h?.jersey ?? null,
+          team: h?.team ?? null,
+          status: (h?.team ? "active" : "inactive") as "active" | "inactive",
+        };
+      })
+        .filter((p) => p.fullName)
         .sort((a, b) => (a.status === b.status ? 0 : a.status === "active" ? -1 : 1));
 
       return { ok: true as const, players };
@@ -318,82 +309,37 @@ export const searchPlayers = createServerFn({ method: "GET" })
     }
   });
 
-/* ---------- Player Detail + Season Averages ---------- */
+/* ---------- Player Detail + Season Averages (ESPN) ---------- */
 
 const PlayerInput = z.object({
   id: z.number().int().positive(),
   season: z.number().int().min(1979).max(2100).optional(),
 });
 
-/**
- * Given a player name, resolve the ESPN athlete id via the cached
- * top-1000 athletes list. Used ONLY as a tertiary fallback for stats
- * when Basketball-Reference doesn't have the player's current team page.
- * The id is never exposed to the frontend.
- */
-async function resolveEspnAthleteId(firstName: string, lastName: string): Promise<number | null> {
-  try {
-    const all = await fetchJson<{ items: any[] }>(
-      "https://sports.core.api.espn.com/v3/sports/basketball/nba/athletes?limit=1000",
-      6 * 60 * 60_000,
-    );
-    const target = normalizeName(`${firstName} ${lastName}`);
-    const hit = all.items.find((p: any) => {
-      const name = normalizeName(String(p.displayName ?? p.fullName ?? `${p.firstName ?? ""} ${p.lastName ?? ""}`));
-      return name === target;
-    });
-    return hit ? Number(hit.id) : null;
-  } catch {
-    return null;
-  }
-}
-
 export const getPlayerProfile = createServerFn({ method: "GET" })
   .inputValidator((d) => PlayerInput.parse(d))
   .handler(async ({ data }) => {
     const season = data.season ?? getCurrentSeason();
     const seasonLabel = (s: number) => `${s}-${String(s + 1).slice(2)}`;
-    const buildMeta = (opts: {
-      statSeason: number;
-      gamesPlayed: number;
-      source: "ESPN" | "Basketball-Reference" | "balldontlie" | "none";
-    }) => ({
+    const buildMeta = (opts: { statSeason: number; gamesPlayed: number; source: "ESPN" | "none" }) => ({
       season: opts.statSeason,
       seasonLabel: seasonLabel(opts.statSeason),
       gamesPlayed: opts.gamesPlayed,
       sampleType:
-        opts.gamesPlayed >= 10 ? "season" as const
-        : opts.gamesPlayed > 0 ? "partial" as const
-        : "none" as const,
+        opts.gamesPlayed >= 10 ? ("season" as const)
+        : opts.gamesPlayed > 0 ? ("partial" as const)
+        : ("none" as const),
       source: opts.source,
     });
 
-    // 1) Identity + current team come from balldontlie (which is what
-    //    /players/:id URLs carry). It also reflects mid-season trades.
-    type BdlPlayer = {
-      id: number;
-      first_name: string;
-      last_name: string;
-      position: string | null;
-      height: string | null;
-      weight: string | null;
-      jersey_number: string | null;
-      college: string | null;
-      country: string | null;
-      draft_year: number | null;
-      draft_round: number | null;
-      draft_number: number | null;
-      team: { id: number; abbreviation: string; full_name: string } | null;
-    };
-    let bdlPlayer: BdlPlayer | null = null;
+    let player: Awaited<ReturnType<typeof getEspnPlayerProfile>> | null = null;
     try {
-      const resp = await bdl<{ data: BdlPlayer }>(`/players/${data.id}`);
-      bdlPlayer = resp.data;
+      player = await getEspnPlayerProfile(data.id, season);
     } catch (err) {
-      console.warn("getPlayerProfile bdl identity failed", err);
+      console.warn("getPlayerProfile espn identity failed", err);
     }
 
-    if (!bdlPlayer) {
+    if (!player) {
       return {
         ok: false as const,
         error: "Jogador não encontrado.",
@@ -404,60 +350,24 @@ export const getPlayerProfile = createServerFn({ method: "GET" })
       };
     }
 
-    const player = {
-      id: bdlPlayer.id,
-      firstName: bdlPlayer.first_name,
-      lastName: bdlPlayer.last_name,
-      fullName: `${bdlPlayer.first_name} ${bdlPlayer.last_name}`.trim(),
-      position: bdlPlayer.position || "-",
-      height: bdlPlayer.height || null,
-      weight: bdlPlayer.weight || null,
-      jersey: bdlPlayer.jersey_number || null,
-      college: bdlPlayer.college,
-      country: bdlPlayer.country,
-      draftYear: bdlPlayer.draft_year,
-      draftRound: bdlPlayer.draft_round,
-      draftNumber: bdlPlayer.draft_number,
-      team: bdlPlayer.team && bdlPlayer.team.id
-        ? { id: bdlPlayer.team.id, abbr: bdlPlayer.team.abbreviation, name: bdlPlayer.team.full_name }
-        : null,
-    };
-
-    // 2) Primary stats source: Basketball-Reference team page (reliable,
-    //    structured, works for current + past seasons).
-    type Averages = NonNullable<Awaited<ReturnType<typeof getPlayerSeasonStats>>>;
+    // Percorre a temporada solicitada + anteriores. Só aceita como "full
+    // season" com >=10 jogos; caso contrário mantém como amostra parcial.
+    type Averages = NonNullable<Awaited<ReturnType<typeof getEspnPlayerStats>>>;
     const seasonsToTry = [season, ...Array.from({ length: Math.min(20, season - 1979) }, (_, i) => season - i - 1)];
     let averages: Averages | null = null;
     let partial: Averages | null = null;
     let statSeason = season;
     let partialSeason = season;
-    let source: "Basketball-Reference" | "ESPN" | "none" = "none";
 
-    if (player.team) {
-      for (const candidate of seasonsToTry) {
-        const row = await getPlayerSeasonStats(player.firstName, player.lastName, player.team.id, candidate).catch(() => null);
-        if (!row) continue;
-        if ((row.games_played ?? 0) >= 10) {
-          averages = row; statSeason = candidate; source = "Basketball-Reference"; break;
-        }
-        if (!partial) { partial = row; partialSeason = candidate; source = "Basketball-Reference"; }
+    for (const candidate of seasonsToTry) {
+      const row = await getEspnPlayerStats(data.id, candidate).catch(() => null);
+      if (!row) continue;
+      if ((row.games_played ?? 0) >= 10) {
+        averages = row;
+        statSeason = candidate;
+        break;
       }
-    }
-
-    // 3) Tertiary fallback: ESPN, only when BBR has nothing (retired
-    //    player, no current team, or team page missing the season).
-    if (!averages) {
-      const espnId = await resolveEspnAthleteId(player.firstName, player.lastName);
-      if (espnId) {
-        for (const candidate of seasonsToTry) {
-          const row = await getEspnPlayerStats(espnId, candidate).catch(() => null);
-          if (!row) continue;
-          if ((row.games_played ?? 0) >= 10) {
-            averages = row as Averages; statSeason = candidate; source = "ESPN"; break;
-          }
-          if (!partial) { partial = row as Averages; partialSeason = candidate; source = "ESPN"; }
-        }
-      }
+      if (!partial) { partial = row; partialSeason = candidate; }
     }
 
     if (!averages && partial) {
@@ -473,12 +383,12 @@ export const getPlayerProfile = createServerFn({ method: "GET" })
       meta: buildMeta({
         statSeason,
         gamesPlayed: averages?.games_played ?? 0,
-        source: averages ? source : "none",
+        source: averages ? "ESPN" : "none",
       }),
     };
   });
 
-/* ---------- Team roster ---------- */
+/* ---------- Team roster (ESPN primary, BBR enrichment) ---------- */
 
 const RosterInput = z.object({
   teamId: z.number().int().positive(),
@@ -491,60 +401,51 @@ export const getTeamRoster = createServerFn({ method: "GET" })
     try {
       const espn = BDL_TO_ESPN_TEAM[data.teamId];
       const season = data.season ?? getCurrentSeason();
-      // Basketball-Reference is now the primary roster source for EVERY
-      // season (current + historical), because it carries per-game
-      // averages we can surface in the team page.
+      const current = getCurrentSeason();
+
+      // Enriquecimento opcional: médias por jogo do BBR (PPG/RPG/APG).
       const bbrRoster = await getBasketballReferenceRoster(data.teamId, season).catch(() => null);
-      if (bbrRoster?.length) {
-        return { ok: true as const, players: bbrRoster };
-      }
+      const averageByName = new Map<string, any>();
+      for (const p of bbrRoster ?? []) averageByName.set(normalizeName(p.fullName), p.average);
+
       if (espn) {
-        const url = season >= 2025
+        const url = season >= current
           ? `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams/${espn.abbr}/roster`
           : `https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba/seasons/${espnSeason(season)}/teams/${espn.id}/athletes?limit=50`;
         const raw = await fetchJson<any>(url, 60 * 60_000);
-        const refs = raw.items?.map((x: any) => String(x.$ref ?? "")) ?? [];
-        const athletes = raw.athletes ?? (await Promise.all(refs.slice(0, 30).map((ref: string) => fetchJson<any>(ref, 60 * 60_000).catch(() => null)))).filter(Boolean);
-        return {
-          ok: true as const,
-          players: athletes.map((p: any) => ({
-            id: Number(p.id),
-            firstName: p.firstName ?? "",
-            lastName: p.lastName ?? "",
-            fullName: p.displayName ?? p.fullName ?? `${p.firstName ?? ""} ${p.lastName ?? ""}`.trim(),
-            position: p.position?.abbreviation ?? p.position?.displayName ?? "-",
-            height: p.displayHeight ?? null,
-            jersey: p.jersey ?? null,
-          })).filter((p: any) => p.id && p.fullName),
-        };
+        let athletes: any[] = [];
+        if (Array.isArray(raw.athletes)) {
+          athletes = raw.athletes[0]?.items ? raw.athletes.flatMap((g: any) => g.items ?? []) : raw.athletes;
+        } else if (Array.isArray(raw.items)) {
+          const refs = raw.items.map((x: any) => String(x.$ref ?? "")).filter(Boolean);
+          athletes = (await Promise.all(refs.slice(0, 30).map((ref: string) => fetchJson<any>(ref, 60 * 60_000).catch(() => null)))).filter(Boolean);
+        }
+        const players = athletes
+          .map((p: any) => {
+            const firstName = p.firstName ?? "";
+            const lastName = p.lastName ?? "";
+            const fullName = p.displayName ?? p.fullName ?? `${firstName} ${lastName}`.trim();
+            return {
+              id: Number(p.id),
+              firstName,
+              lastName,
+              fullName,
+              position: p.position?.abbreviation ?? p.position?.displayName ?? "-",
+              height: p.displayHeight ?? null,
+              jersey: p.jersey ?? null,
+              average: averageByName.get(normalizeName(fullName)) ?? null,
+            };
+          })
+          .filter((p: any) => p.id && p.fullName);
+        if (players.length) return { ok: true as const, players };
       }
 
-      const params: Record<string, string | number> = { "team_ids[]": data.teamId, per_page: 30 };
-      if (data.season) params.seasons = data.season;
-      const res = await bdl<{
-        data: Array<{
-          id: number;
-          first_name: string;
-          last_name: string;
-          position: string | null;
-          height: string | null;
-          weight: string | null;
-          jersey_number: string | null;
-          team: { id: number; abbreviation: string; full_name: string } | null;
-        }>;
-      }>(`/players`, params);
-      return {
-        ok: true as const,
-        players: res.data.map((p) => ({
-          id: p.id,
-          firstName: p.first_name,
-          lastName: p.last_name,
-          fullName: `${p.first_name} ${p.last_name}`.trim(),
-          position: p.position || "-",
-          height: p.height,
-          jersey: p.jersey_number,
-        })),
-      };
+      // Se ESPN falhar, fallback pro BBR (mantém alguma informação em tela).
+      if (bbrRoster?.length) {
+        return { ok: true as const, players: bbrRoster };
+      }
+
+      return { ok: true as const, players: [] };
     } catch (err) {
       console.error("getTeamRoster", err);
       return { ok: false as const, players: [], error: (err as Error).message };
@@ -562,43 +463,10 @@ export const getSeasonAveragesBulk = createServerFn({ method: "GET" })
   .inputValidator((d) => BulkAvgInput.parse(d))
   .handler(async ({ data }) => {
     try {
-      const embeddedRows = data.playerIds
-        .filter((id) => String(id).startsWith("9"))
-        .map((id) => {
-          const raw = String(id);
-          const teamId = Number(raw.slice(1, raw.length - 6));
-          const endYear = Number(raw.slice(-6, -2));
-          return { id, teamId, season: endYear - 1 };
-        });
-      if (embeddedRows.length > 0) {
-        const groups = await Promise.all(
-          [...new Map(embeddedRows.map((r) => [`${r.teamId}:${r.season}`, r])).values()]
-            .map((r) => getBasketballReferenceRoster(r.teamId, r.season).catch(() => null)),
-        );
-        const averages = groups.flatMap((players) => players?.map((p) => p.average) ?? [])
-          .filter((avg) => data.playerIds.includes(avg.player_id));
-        if (averages.length > 0) return { ok: true as const, averages };
-      }
-
       const rows = (await Promise.all(data.playerIds.map((id) => getEspnPlayerStats(id, data.season).catch(() => null))))
-        .map((row, i) => row ? { ...row, player_id: data.playerIds[i] } : null)
-        .filter(Boolean);
-      if (rows.length > 0) return { ok: true as const, averages: rows };
-
-      const url = new URL(`${BASE}/season_averages`);
-      url.searchParams.set("season", String(data.season));
-      [...data.playerIds].sort((a, b) => a - b).forEach((id) =>
-        url.searchParams.append("player_ids[]", String(id)),
-      );
-      const apiKey = process.env.BALLDONTLIE_API_KEY;
-      if (!apiKey) throw new Error("BALLDONTLIE_API_KEY missing");
-
-      const json = await cached(`bdl:${url.toString()}`, 10 * 60_000, async () => {
-        const res = await fetch(url.toString(), { headers: { Authorization: apiKey } });
-        if (!res.ok) throw new Error(`balldontlie ${res.status}`);
-        return (await res.json()) as { data: any[] };
-      });
-      return { ok: true as const, averages: json.data };
+        .map((row, i) => (row ? { ...row, player_id: data.playerIds[i] } : null))
+        .filter(Boolean) as any[];
+      return { ok: true as const, averages: rows };
     } catch (err) {
       console.error("getSeasonAveragesBulk", err);
       return { ok: false as const, averages: [] as any[], error: (err as Error).message };
