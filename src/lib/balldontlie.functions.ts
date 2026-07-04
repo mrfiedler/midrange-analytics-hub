@@ -482,43 +482,10 @@ export const getSeasonAveragesBulk = createServerFn({ method: "GET" })
   .inputValidator((d) => BulkAvgInput.parse(d))
   .handler(async ({ data }) => {
     try {
-      const embeddedRows = data.playerIds
-        .filter((id) => String(id).startsWith("9"))
-        .map((id) => {
-          const raw = String(id);
-          const teamId = Number(raw.slice(1, raw.length - 6));
-          const endYear = Number(raw.slice(-6, -2));
-          return { id, teamId, season: endYear - 1 };
-        });
-      if (embeddedRows.length > 0) {
-        const groups = await Promise.all(
-          [...new Map(embeddedRows.map((r) => [`${r.teamId}:${r.season}`, r])).values()]
-            .map((r) => getBasketballReferenceRoster(r.teamId, r.season).catch(() => null)),
-        );
-        const averages = groups.flatMap((players) => players?.map((p) => p.average) ?? [])
-          .filter((avg) => data.playerIds.includes(avg.player_id));
-        if (averages.length > 0) return { ok: true as const, averages };
-      }
-
       const rows = (await Promise.all(data.playerIds.map((id) => getEspnPlayerStats(id, data.season).catch(() => null))))
-        .map((row, i) => row ? { ...row, player_id: data.playerIds[i] } : null)
-        .filter(Boolean);
-      if (rows.length > 0) return { ok: true as const, averages: rows };
-
-      const url = new URL(`${BASE}/season_averages`);
-      url.searchParams.set("season", String(data.season));
-      [...data.playerIds].sort((a, b) => a - b).forEach((id) =>
-        url.searchParams.append("player_ids[]", String(id)),
-      );
-      const apiKey = process.env.BALLDONTLIE_API_KEY;
-      if (!apiKey) throw new Error("BALLDONTLIE_API_KEY missing");
-
-      const json = await cached(`bdl:${url.toString()}`, 10 * 60_000, async () => {
-        const res = await fetch(url.toString(), { headers: { Authorization: apiKey } });
-        if (!res.ok) throw new Error(`balldontlie ${res.status}`);
-        return (await res.json()) as { data: any[] };
-      });
-      return { ok: true as const, averages: json.data };
+        .map((row, i) => (row ? { ...row, player_id: data.playerIds[i] } : null))
+        .filter(Boolean) as any[];
+      return { ok: true as const, averages: rows };
     } catch (err) {
       console.error("getSeasonAveragesBulk", err);
       return { ok: false as const, averages: [] as any[], error: (err as Error).message };
