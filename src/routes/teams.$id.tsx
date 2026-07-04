@@ -9,7 +9,7 @@ import { EvolutionChart } from "@/components/charts/EvolutionChart";
 import { getTeamRoster } from "@/lib/balldontlie.functions";
 import { getLeagueTeamStats } from "@/lib/team-stats.functions";
 import { getCurrentSeason } from "@/lib/season";
-import { ArrowLeft, Loader2, Radio } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Cell } from "recharts";
 import { PlayerAvatar } from "@/components/players/PlayerAvatar";
 
