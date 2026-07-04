@@ -174,9 +174,6 @@ function TeamDetail() {
                   <th className="px-4 py-3">Jogador</th>
                   <th className="px-4 py-3">Pos</th>
                   <th className="px-4 py-3 hidden md:table-cell">Altura</th>
-                  <th className="px-4 py-3 text-right tabular-nums">PPG</th>
-                  <th className="px-4 py-3 text-right tabular-nums hidden sm:table-cell">RPG</th>
-                  <th className="px-4 py-3 text-right tabular-nums hidden sm:table-cell">APG</th>
                   <th className="px-4 py-3 text-right">Perfil</th>
                 </tr>
               </thead>
@@ -201,9 +198,6 @@ function TeamDetail() {
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">{p.position}</td>
                     <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{p.height ?? "-"}</td>
-                    <td className="px-4 py-3 text-right tabular-nums">{p.average ? p.average.pts.toFixed(1) : "-"}</td>
-                    <td className="px-4 py-3 text-right tabular-nums hidden sm:table-cell">{p.average ? p.average.reb.toFixed(1) : "-"}</td>
-                    <td className="px-4 py-3 text-right tabular-nums hidden sm:table-cell">{p.average ? p.average.ast.toFixed(1) : "-"}</td>
                     <td className="px-4 py-3 text-right">
                       <Link to="/players/$id" params={{ id: String(p.id) }} className="text-flame text-xs hover:underline">Ver →</Link>
                     </td>
