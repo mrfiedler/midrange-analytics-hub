@@ -9,7 +9,7 @@ import { EvolutionChart } from "@/components/charts/EvolutionChart";
 import { getTeamRoster } from "@/lib/balldontlie.functions";
 import { getLeagueTeamStats } from "@/lib/team-stats.functions";
 import { getCurrentSeason } from "@/lib/season";
-import { ArrowLeft, Loader2, Radio } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Cell } from "recharts";
 import { PlayerAvatar } from "@/components/players/PlayerAvatar";
 
@@ -95,11 +95,7 @@ function TeamDetail() {
           <div className="flex-1 min-w-0">
             <div className="eyebrow text-amber flex items-center gap-2">
               {team.conference === "East" ? "Conferência Leste" : "Conferência Oeste"} · {team.division}
-              {isLive ? (
-                <span className="inline-flex items-center gap-1 rounded-full border border-flame/40 bg-flame/10 px-2 py-0.5 text-[10px] text-flame">
-                  <Radio className="size-3 animate-pulse" /> ao vivo
-                </span>
-              ) : statsQ.isLoading ? (
+              {statsQ.isLoading ? (
                 <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
                   <Loader2 className="size-3 animate-spin" /> buscando dados ao vivo…
                 </span>
@@ -178,9 +174,6 @@ function TeamDetail() {
                   <th className="px-4 py-3">Jogador</th>
                   <th className="px-4 py-3">Pos</th>
                   <th className="px-4 py-3 hidden md:table-cell">Altura</th>
-                  <th className="px-4 py-3 text-right tabular-nums">PPG</th>
-                  <th className="px-4 py-3 text-right tabular-nums hidden sm:table-cell">RPG</th>
-                  <th className="px-4 py-3 text-right tabular-nums hidden sm:table-cell">APG</th>
                   <th className="px-4 py-3 text-right">Perfil</th>
                 </tr>
               </thead>
@@ -205,9 +198,6 @@ function TeamDetail() {
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">{p.position}</td>
                     <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{p.height ?? "-"}</td>
-                    <td className="px-4 py-3 text-right tabular-nums">{p.average ? p.average.pts.toFixed(1) : "-"}</td>
-                    <td className="px-4 py-3 text-right tabular-nums hidden sm:table-cell">{p.average ? p.average.reb.toFixed(1) : "-"}</td>
-                    <td className="px-4 py-3 text-right tabular-nums hidden sm:table-cell">{p.average ? p.average.ast.toFixed(1) : "-"}</td>
                     <td className="px-4 py-3 text-right">
                       <Link to="/players/$id" params={{ id: String(p.id) }} className="text-flame text-xs hover:underline">Ver →</Link>
                     </td>
