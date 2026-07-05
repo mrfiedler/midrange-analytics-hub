@@ -14,6 +14,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { cached } from "@/lib/server-cache";
 import { getCurrentSeason } from "@/lib/season";
+import { deriveStatus, type PlayerStatus } from "@/data/player-status";
 
 
 
@@ -225,6 +226,12 @@ async function getEspnPlayerProfile(id: number, season: number) {
   const a = json.athlete?.id ? json.athlete : await fetchJson<any>(`https://sports.core.api.espn.com/v3/sports/basketball/nba/athletes/${id}`, 60 * 60_000);
   const team = a.team;
   const teamId = team?.id ? ESPN_TO_BDL_TEAM[String(team.id)] : undefined;
+  const status = deriveStatus({
+    hasTeam: !!team,
+    espnStatusType: a.status?.type ?? null,
+    espnStatusName: a.status?.name ?? a.status?.abbreviation ?? null,
+    freeAgentTag: null,
+  });
   return {
     id: Number(a.id),
     firstName: a.firstName ?? "",
@@ -240,6 +247,7 @@ async function getEspnPlayerProfile(id: number, season: number) {
     draftRound: a.draft?.round ?? null,
     draftNumber: a.draft?.selection ?? null,
     team: team ? { id: teamId ?? Number(team.id), abbr: team.abbreviation ?? "-", name: team.displayName ?? team.name ?? "-" } : null,
+    status,
   };
 }
 
