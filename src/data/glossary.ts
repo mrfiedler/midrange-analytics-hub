@@ -153,10 +153,42 @@ export const METRICS: Metric[] = [
   { abbr: "PIE", name: "Player Impact Estimate", category: "Impacto",
     newbie: "Estimativa simples da contribuição do jogador no total de eventos do jogo. 10% é média.",
     technical: "Métrica oficial da NBA somando eventos positivos e negativos." },
+
+  // Status contratual / disponibilidade do jogador
+  { abbr: "ACT", name: "Ativo", category: "Status",
+    newbie: "Jogador em atividade e sob contrato com um time da NBA.",
+    technical: "Sob contrato ativo com uma franquia da NBA (não free agent, não lesionado)." },
+  { abbr: "FA", name: "Free Agent", category: "Status",
+    newbie: "Jogador sem contrato com nenhum time no momento. Pode assinar com qualquer franquia.",
+    technical: "Free Agent: atleta sem contrato ativo. Engloba tanto UFA quanto RFA quando o tipo não é conhecido." },
+  { abbr: "UFA", name: "Unrestricted Free Agent", category: "Status",
+    newbie: "Free agent sem amarras: pode escolher qualquer time e o antigo clube não tem direito de igualar propostas.",
+    technical: "Free agent cujo time anterior perdeu o direito de preferência (Bird / early Bird / non-Bird cumprido ou renunciado)." },
+  { abbr: "RFA", name: "Restricted Free Agent", category: "Status",
+    newbie: "Free agent que pode negociar com outros times, mas o clube atual pode igualar a proposta e mantê-lo.",
+    technical: "Free agent cujo time anterior fez uma qualifying offer e mantém right of first refusal por 48h em cada oferta." },
+  { abbr: "TW", name: "Two-Way Contract", category: "Status",
+    newbie: "Contrato híbrido que permite ao jogador transitar entre o time da NBA e o afiliado na G League.",
+    technical: "Two-way contract: até 50 jogos disputáveis na NBA por temporada, salário híbrido NBA/G League." },
+  { abbr: "GL", name: "G League", category: "Status",
+    newbie: "Jogador atuando na liga de desenvolvimento (G League), afiliada da NBA.",
+    technical: "Atleta em roster de time da NBA G League (ex-D League), fora do roster ativo NBA." },
+  { abbr: "INJ", name: "Lesionado", category: "Status",
+    newbie: "Jogador machucado e afastado das partidas até se recuperar.",
+    technical: "Status injured/out reportado no injury report oficial." },
+  { abbr: "SUS", name: "Suspenso", category: "Status",
+    newbie: "Jogador punido pela liga ou pelo time e impedido de jogar por um tempo determinado.",
+    technical: "Suspensão aplicada pela NBA ou pela franquia; jogador remunerado ou não conforme o caso." },
+  { abbr: "INA", name: "Inativo", category: "Status",
+    newbie: "Jogador que não está no roster ativo de nenhum time da NBA no momento.",
+    technical: "Não consta em elenco NBA ativo na temporada corrente." },
+  { abbr: "RET", name: "Aposentado", category: "Status",
+    newbie: "Jogador que encerrou a carreira.",
+    technical: "Fim oficial de carreira registrado pela liga." },
 ];
 
 export const CATEGORIES = [
-  "Básicas", "Eficiência", "Avançadas", "Defesa", "Impacto",
+  "Básicas", "Eficiência", "Avançadas", "Defesa", "Impacto", "Status",
 ] as const;
 
 export function findMetric(abbr: string): Metric | undefined {
