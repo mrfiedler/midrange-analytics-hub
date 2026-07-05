@@ -8,6 +8,7 @@ import { StatCard } from "@/components/StatCard";
 import { MetricTooltip } from "@/components/MetricTooltip";
 import { useMode } from "@/lib/mode-context";
 import { PlayerAvatar } from "@/components/players/PlayerAvatar";
+import { StatusBadge } from "@/components/players/StatusBadge";
 
 
 
@@ -78,6 +79,7 @@ function PlayerProfile() {
           <div className="flex-1 min-w-0">
             <div className="eyebrow text-flame">{player.team?.abbr ?? "Free agent"} · {player.position}</div>
             <h1 className="font-display text-4xl md:text-6xl leading-none mt-1">{player.fullName}</h1>
+            <div className="mt-2"><StatusBadge status={(player as any).status} size="md" /></div>
             <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-muted-foreground">
               {player.jersey && <span className="text-amber font-display text-lg">#{player.jersey}</span>}
               {player.team && <span>{player.team.name}</span>}
