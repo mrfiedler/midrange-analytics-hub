@@ -1,10 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
-import { Search, Loader2 } from "lucide-react";
-import { searchPlayers } from "@/lib/balldontlie.functions";
+import { Search, Loader2, Flame, UserMinus } from "lucide-react";
+import { searchPlayers, getTrendingPlayers, getFreeAgents } from "@/lib/balldontlie.functions";
 import { PlayerAvatar } from "@/components/players/PlayerAvatar";
+import { StatusBadge } from "@/components/players/StatusBadge";
 
 export const Route = createFileRoute("/players/")({
   head: () => ({
@@ -19,9 +20,23 @@ export const Route = createFileRoute("/players/")({
 function PlayersSearch() {
   const [q, setQ] = useState("");
   const search = useServerFn(searchPlayers);
+  const trendingFn = useServerFn(getTrendingPlayers);
+  const freeAgentsFn = useServerFn(getFreeAgents);
 
   const mutation = useMutation({
     mutationFn: (query: string) => search({ data: { q: query } }),
+  });
+
+  const trending = useQuery({
+    queryKey: ["trending-players"],
+    queryFn: () => trendingFn(),
+    staleTime: 60 * 60_000,
+  });
+
+  const freeAgents = useQuery({
+    queryKey: ["free-agents"],
+    queryFn: () => freeAgentsFn(),
+    staleTime: 6 * 60 * 60_000,
   });
 
   useEffect(() => {
@@ -35,6 +50,7 @@ function PlayersSearch() {
   const results = mutation.data?.players ?? [];
   const apiOk = mutation.data?.ok ?? true;
   const isLoading = mutation.isPending;
+  const showBrowse = q.trim().length < 2;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 fade-up">
@@ -50,7 +66,7 @@ function PlayersSearch() {
           autoFocus
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Buscar jogador da NBA…"
+          placeholder="Buscar jogador da NBA..."
           className="flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
         />
         {isLoading && <Loader2 className="size-4 animate-spin text-flame" />}
@@ -82,64 +98,114 @@ function PlayersSearch() {
         </div>
       )}
 
-      {!isLoading && (
+      {!isLoading && !showBrowse && (
         <ul className="grid gap-2 sm:grid-cols-2">
           {results.map((p) => (
             <li key={p.id}>
-              <Link
-                to="/players/$id"
-                params={{ id: String(p.id) }}
-                className="mrf-card mrf-card-hover flex items-center gap-3 p-3"
-              >
-                <PlayerAvatar id={p.id} firstName={p.firstName} lastName={p.lastName} />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium truncate">{p.fullName}</span>
-                    <StatusBadge status={(p as any).status ?? "active"} />
-                  </div>
-                  <div className="text-xs text-muted-foreground truncate">
-                    {p.position && p.position !== "-" ? p.position : "-"}
-                    {p.team && ` · ${p.team.abbr} ${p.team.name}`}
-                  </div>
-                </div>
-                {p.jersey && <span className="font-display text-amber text-lg">#{p.jersey}</span>}
-              </Link>
+              <PlayerRow p={p as any} />
             </li>
           ))}
         </ul>
       )}
 
-      {q.trim().length < 2 && (
-        <div className="mrf-card p-6">
-          <div className="eyebrow mb-3">Sugestões</div>
-          <div className="flex flex-wrap gap-2">
-            {["Jokic", "Luka", "Tatum", "Giannis", "SGA", "Wembanyama", "Booker", "Haliburton"].map((name) => (
-              <button
-                key={name}
-                onClick={() => setQ(name)}
-                className="rounded-full border border-hairline px-3 py-1 text-xs hover:border-flame/60 transition-colors"
-              >
-                {name}
-              </button>
-            ))}
-          </div>
-        </div>
+      {showBrowse && (
+        <>
+          <Section
+            icon={<Flame className="size-4 text-flame" />}
+            title="Trending"
+            hint="Mais citados na mídia hoje - atualizado via ESPN"
+            loading={trending.isLoading}
+            error={!trending.data?.ok && trending.data?.error}
+          >
+            <ul className="grid gap-2 sm:grid-cols-2">
+              {(trending.data?.players ?? []).map((p) => (
+                <li key={p.id}><PlayerRow p={p as any} subtitle={p.reason} /></li>
+              ))}
+              {trending.data?.ok && (trending.data.players?.length ?? 0) === 0 && (
+                <li className="mrf-card p-4 text-sm text-muted-foreground sm:col-span-2">Sem trending agora.</li>
+              )}
+            </ul>
+          </Section>
+
+          <Section
+            icon={<UserMinus className="size-4 text-amber" />}
+            title="Free Agents"
+            hint="Mercado aberto da temporada - ESPN Free Agency Tracker"
+            loading={freeAgents.isLoading}
+            error={!freeAgents.data?.ok && freeAgents.data?.error}
+          >
+            <ul className="grid gap-2 sm:grid-cols-2">
+              {(freeAgents.data?.players ?? []).map((p: any) => (
+                <li key={p.id}><PlayerRow p={p} /></li>
+              ))}
+              {freeAgents.data?.ok && (freeAgents.data.players?.length ?? 0) === 0 && (
+                <li className="mrf-card p-4 text-sm text-muted-foreground sm:col-span-2">Sem dados de free agents no momento.</li>
+              )}
+            </ul>
+          </Section>
+        </>
       )}
     </div>
   );
 }
 
-function StatusBadge({ status }: { status: "active" | "inactive" }) {
-  if (status === "active") {
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-display uppercase tracking-widest text-emerald-400">
-        <span className="size-1 rounded-full bg-emerald-400" /> Ativo
-      </span>
-    );
-  }
+function Section({
+  icon, title, hint, loading, error, children,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  hint: string;
+  loading?: boolean;
+  error?: string | false | undefined;
+  children: React.ReactNode;
+}) {
   return (
-    <span className="inline-flex items-center rounded-full border border-hairline bg-surface-2 px-1.5 py-0.5 text-[9px] font-display uppercase tracking-widest text-muted-foreground">
-      Fora da liga
-    </span>
+    <section className="space-y-3">
+      <div className="flex items-end justify-between gap-3">
+        <div>
+          <div className="eyebrow flex items-center gap-1.5">{icon}{title}</div>
+          <p className="text-xs text-muted-foreground mt-1">{hint}</p>
+        </div>
+        {loading && <Loader2 className="size-4 animate-spin text-flame" />}
+      </div>
+      {error && <div className="mrf-card p-3 text-sm text-amber">Não foi possível carregar: {error}</div>}
+      {loading ? (
+        <ul className="grid gap-2 sm:grid-cols-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <li key={i} className="mrf-card p-3 flex items-center gap-3 animate-pulse">
+              <div className="size-10 rounded-full bg-surface-2" />
+              <div className="flex-1 space-y-2">
+                <div className="h-3 w-32 rounded bg-surface-2" />
+                <div className="h-2 w-20 rounded bg-surface-2" />
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : children}
+    </section>
+  );
+}
+
+function PlayerRow({ p, subtitle }: { p: any; subtitle?: string }) {
+  return (
+    <Link
+      to="/players/$id"
+      params={{ id: String(p.id) }}
+      className="mrf-card mrf-card-hover flex items-center gap-3 p-3"
+    >
+      <PlayerAvatar id={p.id} firstName={p.firstName} lastName={p.lastName} />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-medium truncate">{p.fullName}</span>
+          <StatusBadge status={p.status} />
+        </div>
+        <div className="text-xs text-muted-foreground truncate">
+          {p.position && p.position !== "-" ? p.position : "-"}
+          {p.team ? ` · ${p.team.abbr} ${p.team.name}` : " · Sem time"}
+        </div>
+        {subtitle && <div className="text-[11px] text-muted-foreground/80 truncate mt-0.5 italic">"{subtitle}"</div>}
+      </div>
+      {p.jersey && <span className="font-display text-amber text-lg">#{p.jersey}</span>}
+    </Link>
   );
 }
