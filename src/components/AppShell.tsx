@@ -1,7 +1,12 @@
-import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, Users, Shield, Swords, BarChart3, BookOpen, Settings, Search, Menu, X } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { Home, Users, Shield, Swords, BarChart3, BookOpen, Settings, Search, Menu, X, Loader2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { ModeToggle } from "@/components/ModeToggle";
+import { searchPlayers } from "@/lib/balldontlie.functions";
+import { TEAMS } from "@/data/teams";
+import { PlayerAvatar } from "@/components/players/PlayerAvatar";
 
 // Static path served from /public - works on Vercel, Lovable, or any host
 // without depending on the internal /__l5e/... proxy.
@@ -138,16 +143,153 @@ function Header({ onOpenMenu }: { onOpenMenu: () => void }) {
   );
 }
 
+/**
+ * Busca global: jogadores (ESPN) + times (base local). Dropdown com resultados
+ * ao vivo. Fecha em blur, Escape ou clique num item.
+ */
 function GlobalSearch() {
+  const [q, setQ] = useState("");
+  const [open, setOpen] = useState(false);
+  const [activeIdx, setActiveIdx] = useState(0);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const search = useServerFn(searchPlayers);
+
+  const mutation = useMutation({
+    mutationFn: (query: string) => search({ data: { q: query } }),
+  });
+
+  // Debounce da busca de jogadores.
+  useEffect(() => {
+    const query = q.trim();
+    if (query.length < 2) return;
+    const t = setTimeout(() => mutation.mutate(query), 350);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q]);
+
+  // Times filtrados localmente (base estática pequena).
+  const teamMatches = useMemo(() => {
+    const query = q.trim().toLowerCase();
+    if (query.length < 1) return [];
+    return TEAMS.filter(
+      (t) =>
+        t.name.toLowerCase().includes(query) ||
+        t.city.toLowerCase().includes(query) ||
+        t.abbr.toLowerCase().includes(query),
+    ).slice(0, 4);
+  }, [q]);
+
+  const playerMatches = (mutation.data?.ok ? mutation.data.players : []).slice(0, 6);
+
+  const items = [
+    ...teamMatches.map((t) => ({ kind: "team" as const, id: t.id, label: `${t.city} ${t.name}`, sub: `${t.abbr} · ${t.conference}` })),
+    ...playerMatches.map((p) => ({ kind: "player" as const, id: p.id, label: p.fullName, sub: `${p.position !== "-" ? p.position : ""}${p.team ? (p.position !== "-" ? " · " : "") + p.team.abbr + " " + p.team.name : ""}`, firstName: p.firstName, lastName: p.lastName })),
+  ];
+
+  useEffect(() => setActiveIdx(0), [q]);
+
+  // Fecha ao clicar fora.
+  useEffect(() => {
+    function onDoc(e: MouseEvent) {
+      if (!wrapperRef.current?.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
+
+  const commit = (item: (typeof items)[number]) => {
+    setOpen(false);
+    setQ("");
+    if (item.kind === "team") {
+      navigate({ to: "/teams/$id", params: { id: String(item.id) } });
+    } else {
+      navigate({ to: "/players/$id", params: { id: String(item.id) } });
+    }
+  };
+
+  const onKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Escape") { setOpen(false); (e.target as HTMLInputElement).blur(); return; }
+    if (!items.length) return;
+    if (e.key === "ArrowDown") { e.preventDefault(); setActiveIdx((i) => (i + 1) % items.length); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); setActiveIdx((i) => (i - 1 + items.length) % items.length); }
+    else if (e.key === "Enter") { e.preventDefault(); commit(items[activeIdx]); }
+  };
+
+  const hasQuery = q.trim().length >= 1;
+
   return (
-    <Link
-      to="/players"
-      className="group flex-1 min-w-0 max-w-xl flex items-center gap-2.5 rounded-md border border-hairline bg-surface px-3 py-2 text-sm text-muted-foreground transition-colors hover:border-flame/50 hover:text-foreground"
-    >
-      <Search className="size-4 shrink-0" />
-      <span className="truncate hidden sm:inline">Buscar jogadores, times, composições...</span>
-      <span className="truncate sm:hidden">Buscar...</span>
-      <kbd className="ml-auto hidden sm:inline-flex h-5 items-center rounded border border-hairline bg-background px-1.5 text-[10px] font-mono text-muted-foreground/80">/</kbd>
-    </Link>
+    <div ref={wrapperRef} className="relative flex-1 min-w-0 max-w-xl">
+      <div className="group flex items-center gap-2.5 rounded-md border border-hairline bg-surface px-3 py-2 text-sm transition-colors focus-within:border-flame/60">
+        <Search className="size-4 shrink-0 text-muted-foreground" />
+        <input
+          value={q}
+          onChange={(e) => { setQ(e.target.value); setOpen(true); }}
+          onFocus={() => setOpen(true)}
+          onKeyDown={onKey}
+          placeholder="Buscar jogadores, times..."
+          className="flex-1 min-w-0 bg-transparent outline-none placeholder:text-muted-foreground"
+          aria-label="Busca global"
+        />
+        {mutation.isPending && <Loader2 className="size-4 animate-spin text-flame" />}
+        <kbd className="ml-1 hidden sm:inline-flex h-5 items-center rounded border border-hairline bg-background px-1.5 text-[10px] font-mono text-muted-foreground/80">/</kbd>
+      </div>
+
+      {open && hasQuery && (
+        <div className="absolute left-0 right-0 top-full mt-2 rounded-md border border-hairline bg-surface shadow-lg overflow-hidden z-40 max-h-[70vh] overflow-y-auto">
+          {items.length === 0 && !mutation.isPending && (
+            <div className="px-4 py-6 text-sm text-muted-foreground text-center">
+              {q.trim().length < 2 ? "Digite ao menos 2 letras" : `Nenhum resultado para "${q}"`}
+            </div>
+          )}
+          {teamMatches.length > 0 && (
+            <div className="border-b border-hairline">
+              <div className="px-3 pt-2 pb-1 text-[10px] font-display uppercase tracking-widest text-muted-foreground/70">Times</div>
+              {items.filter((i) => i.kind === "team").map((item, idx) => {
+                const globalIdx = idx;
+                const active = globalIdx === activeIdx;
+                return (
+                  <button
+                    key={`t-${item.id}`}
+                    onMouseEnter={() => setActiveIdx(globalIdx)}
+                    onClick={() => commit(item)}
+                    className={`w-full flex items-center gap-3 px-3 py-2 text-left text-sm ${active ? "bg-surface-2" : "hover:bg-surface-2"}`}
+                  >
+                    <Shield className="size-4 text-flame shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate">{item.label}</div>
+                      <div className="text-[11px] text-muted-foreground truncate">{item.sub}</div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          {playerMatches.length > 0 && (
+            <div>
+              <div className="px-3 pt-2 pb-1 text-[10px] font-display uppercase tracking-widest text-muted-foreground/70">Jogadores</div>
+              {items.filter((i) => i.kind === "player").map((item, idx) => {
+                const globalIdx = teamMatches.length + idx;
+                const active = globalIdx === activeIdx;
+                return (
+                  <button
+                    key={`p-${item.id}`}
+                    onMouseEnter={() => setActiveIdx(globalIdx)}
+                    onClick={() => commit(item)}
+                    className={`w-full flex items-center gap-3 px-3 py-2 text-left text-sm ${active ? "bg-surface-2" : "hover:bg-surface-2"}`}
+                  >
+                    <PlayerAvatar id={item.id} firstName={(item as any).firstName} lastName={(item as any).lastName} size="sm" />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate">{item.label}</div>
+                      <div className="text-[11px] text-muted-foreground truncate">{item.sub || "-"}</div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

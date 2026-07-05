@@ -14,6 +14,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { cached } from "@/lib/server-cache";
 import { getCurrentSeason } from "@/lib/season";
+import { deriveStatus, type PlayerStatus } from "@/data/player-status";
 
 
 
@@ -225,6 +226,12 @@ async function getEspnPlayerProfile(id: number, season: number) {
   const a = json.athlete?.id ? json.athlete : await fetchJson<any>(`https://sports.core.api.espn.com/v3/sports/basketball/nba/athletes/${id}`, 60 * 60_000);
   const team = a.team;
   const teamId = team?.id ? ESPN_TO_BDL_TEAM[String(team.id)] : undefined;
+  const status = deriveStatus({
+    hasTeam: !!team,
+    espnStatusType: a.status?.type ?? null,
+    espnStatusName: a.status?.name ?? a.status?.abbreviation ?? null,
+    freeAgentTag: null,
+  });
   return {
     id: Number(a.id),
     firstName: a.firstName ?? "",
@@ -240,6 +247,7 @@ async function getEspnPlayerProfile(id: number, season: number) {
     draftRound: a.draft?.round ?? null,
     draftNumber: a.draft?.selection ?? null,
     team: team ? { id: teamId ?? Number(team.id), abbr: team.abbreviation ?? "-", name: team.displayName ?? team.name ?? "-" } : null,
+    status,
   };
 }
 
@@ -296,16 +304,139 @@ export const searchPlayers = createServerFn({ method: "GET" })
           weight: h?.weight ?? null,
           jersey: h?.jersey ?? null,
           team: h?.team ?? null,
-          status: (h?.team ? "active" : "inactive") as "active" | "inactive",
+          status: h?.status ?? deriveStatus({ hasTeam: false }),
+          active: (h?.team ? "active" : "inactive") as "active" | "inactive",
         };
       })
         .filter((p) => p.fullName)
-        .sort((a, b) => (a.status === b.status ? 0 : a.status === "active" ? -1 : 1));
+        .sort((a, b) => (a.active === b.active ? 0 : a.active === "active" ? -1 : 1));
 
       return { ok: true as const, players };
     } catch (err) {
       console.error("searchPlayers", err);
       return { ok: false as const, players: [], error: (err as Error).message };
+    }
+  });
+
+/* ---------- Trending players (ESPN news feed) ---------- */
+
+type TrendingPlayer = {
+  id: number;
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  position: string;
+  team: { id: number; abbr: string; name: string } | null;
+  status: PlayerStatus | null;
+  reason?: string; // headline curta pra dar contexto
+};
+
+export const getTrendingPlayers = createServerFn({ method: "GET" })
+  .handler(async () => {
+    try {
+      const news = await fetchJson<any>(
+        "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/news?limit=50",
+        30 * 60_000,
+      );
+      const articles: any[] = news?.articles ?? [];
+      // Conta menções por atleta (id) e guarda a manchete mais recente.
+      const counts = new Map<number, { count: number; headline: string }>();
+      for (const art of articles) {
+        const headline = art.headline ?? art.title ?? "";
+        const cats: any[] = art.categories ?? [];
+        for (const c of cats) {
+          const ath = c.athlete ?? c.athleteId;
+          const aid = Number(ath?.id ?? ath);
+          if (!aid || !Number.isFinite(aid)) continue;
+          const prev = counts.get(aid);
+          if (prev) prev.count += 1;
+          else counts.set(aid, { count: 1, headline });
+        }
+      }
+      const ranked = [...counts.entries()]
+        .sort((a, b) => b[1].count - a[1].count)
+        .slice(0, 12);
+      const hydrated = await Promise.all(ranked.map(async ([id, meta]) => {
+        try {
+          const p = await getEspnPlayerProfile(id, getCurrentSeason());
+          return {
+            id: p.id,
+            firstName: p.firstName,
+            lastName: p.lastName,
+            fullName: p.fullName,
+            position: p.position,
+            team: p.team,
+            status: p.status,
+            reason: meta.headline,
+          } satisfies TrendingPlayer;
+        } catch {
+          return null;
+        }
+      }));
+      const players = hydrated.filter(Boolean) as TrendingPlayer[];
+      return { ok: true as const, players };
+    } catch (err) {
+      console.error("getTrendingPlayers", err);
+      return { ok: false as const, players: [] as TrendingPlayer[], error: (err as Error).message };
+    }
+  });
+
+/* ---------- Free Agents (ESPN FA tracker page) ---------- */
+
+export const getFreeAgents = createServerFn({ method: "GET" })
+  .handler(async () => {
+    try {
+      const html = await cached("espn:freeagency", 6 * 60 * 60_000, async () => {
+        const res = await fetch("https://www.espn.com/nba/freeagency", {
+          headers: BBR_HEADERS,
+          signal: AbortSignal.timeout(15_000),
+        });
+        if (!res.ok) throw new Error(`espn freeagency ${res.status}`);
+        return res.text();
+      });
+      // Extrai (id, tag) de blocos onde uma sigla UFA/RFA aparece perto do link.
+      const linkRe = /\/nba\/player\/_\/id\/(\d+)\/[\w-]+/g;
+      const ids = new Set<number>();
+      const idTag = new Map<number, string>();
+      let m: RegExpExecArray | null;
+      while ((m = linkRe.exec(html)) !== null) {
+        const id = Number(m[1]);
+        if (!id || ids.has(id)) continue;
+        ids.add(id);
+        // Olha uma janela ao redor do link procurando UFA/RFA/Player Option/Two-Way.
+        const window = html.slice(Math.max(0, m.index - 400), m.index + 400);
+        if (/\bUFA\b|Unrestricted/i.test(window)) idTag.set(id, "UFA");
+        else if (/\bRFA\b|Restricted/i.test(window)) idTag.set(id, "RFA");
+        else if (/Two-?Way/i.test(window)) idTag.set(id, "TW");
+        else idTag.set(id, "FA");
+      }
+      const top = [...ids].slice(0, 24);
+      const hydrated = await Promise.all(top.map(async (id) => {
+        try {
+          const p = await getEspnPlayerProfile(id, getCurrentSeason());
+          const tag = idTag.get(id) ?? "FA";
+          const status = deriveStatus({
+            hasTeam: !!p.team,
+            espnStatusType: null,
+            espnStatusName: null,
+            freeAgentTag: tag,
+          });
+          return {
+            id: p.id,
+            firstName: p.firstName,
+            lastName: p.lastName,
+            fullName: p.fullName,
+            position: p.position,
+            team: p.team,
+            status,
+          };
+        } catch { return null; }
+      }));
+      const players = (hydrated.filter(Boolean) as any[]).slice(0, 12);
+      return { ok: true as const, players };
+    } catch (err) {
+      console.error("getFreeAgents", err);
+      return { ok: false as const, players: [] as any[], error: (err as Error).message };
     }
   });
 
