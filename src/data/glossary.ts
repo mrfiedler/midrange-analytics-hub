@@ -3,7 +3,7 @@ export type MetricLevel = "Ruim" | "Médio" | "Bom" | "Elite";
 export interface Metric {
   abbr: string;
   name: string;
-  category: "Básicas" | "Eficiência" | "Avançadas" | "Defesa" | "Impacto";
+  category: "Básicas" | "Eficiência" | "Avançadas" | "Defesa" | "Impacto" | "Status";
   newbie: string;
   technical: string;
   formula?: string;
