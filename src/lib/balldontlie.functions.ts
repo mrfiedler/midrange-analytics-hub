@@ -386,7 +386,7 @@ export const getTrendingPlayers = createServerFn({ method: "GET" })
 export const getFreeAgents = createServerFn({ method: "GET" })
   .handler(async () => {
     try {
-      const players = await cached("espn:freeagents", 6 * 60 * 60_000, async () => {
+      const players = await cached("espn:freeagents:v2", 6 * 60 * 60_000, async () => {
         const pageSize = 100;
         const first = await fetchJson<{ count: number; pageCount: number; items: any[] }>(
           `https://sports.core.api.espn.com/v3/sports/basketball/nba/athletes?limit=${pageSize}&freeAgent=true&active=true&page=1`,
@@ -403,24 +403,51 @@ export const getFreeAgents = createServerFn({ method: "GET" })
             all.push(...(page.items ?? []));
           } catch { /* ignore page */ }
         }
-        return all.map((a) => {
-          const status = deriveStatus({
-            hasTeam: false,
-            espnStatusType: null,
-            espnStatusName: null,
-            freeAgentTag: "FA",
-          });
-          return {
-            id: Number(a.id),
-            firstName: a.firstName ?? "",
-            lastName: a.lastName ?? "",
-            fullName: a.fullName ?? a.displayName ?? "",
-            position: a.position?.abbreviation ?? a.position?.displayName ?? "-",
-            team: null as null | { id: number; abbr: string; name: string },
-            jersey: a.jersey ?? null,
-            status,
-          };
-        }).filter((p) => p.id && p.fullName);
+
+        // O flag `freeAgent=true` no core costuma ficar defasado (jogadores
+        // que já assinaram continuam listados). Validamos cada candidato no
+        // endpoint site.web, que reflete o time atual — mantemos apenas os
+        // que realmente estão sem time.
+        const CONCURRENCY = 10;
+        const verified: any[] = [];
+        for (let i = 0; i < all.length; i += CONCURRENCY) {
+          const chunk = all.slice(i, i + CONCURRENCY);
+          const results = await Promise.all(chunk.map(async (a) => {
+            const id = Number(a.id);
+            if (!id) return null;
+            try {
+              const json = await fetchJson<any>(
+                `https://site.web.api.espn.com/apis/common/v3/sports/basketball/nba/athletes/${id}`,
+                60 * 60_000,
+              );
+              const ath = json.athlete ?? {};
+              if (ath.team) return null; // já assinou
+              const statusType = (ath.status?.type ?? "").toLowerCase();
+              if (statusType.includes("retire")) return null;
+              const status = deriveStatus({
+                hasTeam: false,
+                espnStatusType: ath.status?.type ?? null,
+                espnStatusName: ath.status?.name ?? ath.status?.abbreviation ?? null,
+                freeAgentTag: "FA",
+              });
+              return {
+                id,
+                firstName: ath.firstName ?? a.firstName ?? "",
+                lastName: ath.lastName ?? a.lastName ?? "",
+                fullName: ath.displayName ?? ath.fullName ?? a.fullName ?? a.displayName ?? "",
+                position: ath.position?.abbreviation ?? ath.position?.displayName ?? a.position?.abbreviation ?? "-",
+                team: null as null | { id: number; abbr: string; name: string },
+                jersey: ath.jersey ?? a.jersey ?? null,
+                status,
+              };
+            } catch {
+              return null;
+            }
+          }));
+          for (const r of results) if (r) verified.push(r);
+        }
+        verified.sort((x, y) => x.fullName.localeCompare(y.fullName));
+        return verified;
       });
       return { ok: true as const, players, total: players.length };
     } catch (err) {
@@ -428,6 +455,7 @@ export const getFreeAgents = createServerFn({ method: "GET" })
       return { ok: false as const, players: [] as any[], total: 0, error: (err as Error).message };
     }
   });
+
 
 
 /* ---------- Player Detail + Season Averages (ESPN) ---------- */
