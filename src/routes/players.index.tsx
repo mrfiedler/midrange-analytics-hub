@@ -129,13 +129,13 @@ function PlayersSearch() {
 
           <Section
             icon={<UserMinus className="size-4 text-amber" />}
-            title="Free Agents"
+            title={`Free Agents${freeAgents.data?.ok && freeAgents.data.total ? ` (${freeAgents.data.total})` : ""}`}
             hint="Mercado aberto da temporada - ESPN Free Agency Tracker"
             loading={freeAgents.isLoading}
             error={!freeAgents.data?.ok && freeAgents.data?.error}
           >
             <ul className="grid gap-2 sm:grid-cols-2">
-              {(freeAgents.data?.players ?? []).map((p: any) => (
+              {(freeAgents.data?.players ?? []).slice(0, 30).map((p: any) => (
                 <li key={p.id}><PlayerRow p={p} /></li>
               ))}
               {freeAgents.data?.ok && (freeAgents.data.players?.length ?? 0) === 0 && (
@@ -143,6 +143,7 @@ function PlayersSearch() {
               )}
             </ul>
           </Section>
+
         </>
       )}
     </div>
