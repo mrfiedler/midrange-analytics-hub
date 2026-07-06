@@ -2,8 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
-import { Search, Loader2, Flame, UserMinus } from "lucide-react";
-import { searchPlayers, getTrendingPlayers, getFreeAgents } from "@/lib/balldontlie.functions";
+import { Search, Loader2, Flame } from "lucide-react";
+import { searchPlayers, getTrendingPlayers } from "@/lib/balldontlie.functions";
 import { PlayerAvatar } from "@/components/players/PlayerAvatar";
 import { StatusBadge } from "@/components/players/StatusBadge";
 
@@ -21,7 +21,6 @@ function PlayersSearch() {
   const [q, setQ] = useState("");
   const search = useServerFn(searchPlayers);
   const trendingFn = useServerFn(getTrendingPlayers);
-  const freeAgentsFn = useServerFn(getFreeAgents);
 
   const mutation = useMutation({
     mutationFn: (query: string) => search({ data: { q: query } }),
@@ -31,12 +30,6 @@ function PlayersSearch() {
     queryKey: ["trending-players"],
     queryFn: () => trendingFn(),
     staleTime: 60 * 60_000,
-  });
-
-  const freeAgents = useQuery({
-    queryKey: ["free-agents"],
-    queryFn: () => freeAgentsFn(),
-    staleTime: 6 * 60 * 60_000,
   });
 
   useEffect(() => {
@@ -123,23 +116,6 @@ function PlayersSearch() {
               ))}
               {trending.data?.ok && (trending.data.players?.length ?? 0) === 0 && (
                 <li className="mrf-card p-4 text-sm text-muted-foreground sm:col-span-2">Sem trending agora.</li>
-              )}
-            </ul>
-          </Section>
-
-          <Section
-            icon={<UserMinus className="size-4 text-amber" />}
-            title={`Free Agents${freeAgents.data?.ok && freeAgents.data.total ? ` (${freeAgents.data.total})` : ""}`}
-            hint="Mercado aberto da temporada - ESPN Free Agency Tracker"
-            loading={freeAgents.isLoading}
-            error={!freeAgents.data?.ok && freeAgents.data?.error}
-          >
-            <ul className="grid gap-2 sm:grid-cols-2">
-              {(freeAgents.data?.players ?? []).slice(0, 30).map((p: any) => (
-                <li key={p.id}><PlayerRow p={p} /></li>
-              ))}
-              {freeAgents.data?.ok && (freeAgents.data.players?.length ?? 0) === 0 && (
-                <li className="mrf-card p-4 text-sm text-muted-foreground sm:col-span-2">Sem dados de free agents no momento.</li>
               )}
             </ul>
           </Section>
