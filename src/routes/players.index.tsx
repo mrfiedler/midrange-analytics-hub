@@ -21,7 +21,6 @@ function PlayersSearch() {
   const [q, setQ] = useState("");
   const search = useServerFn(searchPlayers);
   const trendingFn = useServerFn(getTrendingPlayers);
-  const freeAgentsFn = useServerFn(getFreeAgents);
 
   const mutation = useMutation({
     mutationFn: (query: string) => search({ data: { q: query } }),
@@ -31,12 +30,6 @@ function PlayersSearch() {
     queryKey: ["trending-players"],
     queryFn: () => trendingFn(),
     staleTime: 60 * 60_000,
-  });
-
-  const freeAgents = useQuery({
-    queryKey: ["free-agents"],
-    queryFn: () => freeAgentsFn(),
-    staleTime: 6 * 60 * 60_000,
   });
 
   useEffect(() => {
