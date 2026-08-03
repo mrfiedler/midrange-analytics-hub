@@ -43,6 +43,13 @@ function TeamDetail() {
     enabled: !!team,
   });
 
+  const standingsQ = useQuery({
+    queryKey: ["leagueStandings", season],
+    queryFn: () => fetchStandings({ data: { season } }),
+    staleTime: 15 * 60_000,
+    enabled: !!team,
+  });
+
   if (!team) {
     return <div className="mrf-card p-6">Time não encontrado. <Link to="/teams" className="text-flame">Voltar</Link></div>;
   }
@@ -51,14 +58,22 @@ function TeamDetail() {
   const liveRow = statsQ.data?.ok
     ? statsQ.data.rows.find((r) => r.teamName?.toLowerCase().endsWith(team.name.toLowerCase()))
     : undefined;
-  const isLive = !!liveRow;
+
+  const standingRow = standingsQ.data?.ok
+    ? standingsQ.data.rows.find((r) => r.abbr === team.abbr)
+    : undefined;
 
   const ortg = liveRow?.ortg ?? team.ortg;
   const drtg = liveRow?.drtg ?? team.drtg;
   const pace = liveRow?.pace ?? team.pace;
   const efg = liveRow?.efg ?? team.efg;
-  const netRtg = +((liveRow?.netRtg ?? ortg - drtg).toFixed(1));
-  const record = liveRow ? `${liveRow.wins}–${liveRow.losses}` : team.record;
+  const netRtg = +((liveRow?.netRtg ?? standingRow?.diff ?? ortg - drtg).toFixed(1));
+  const record = standingRow
+    ? `${standingRow.wins}-${standingRow.losses}`
+    : liveRow
+      ? `${liveRow.wins}-${liveRow.losses}`
+      : team.record;
+
   const logo = teamLogoUrl(team.abbr);
 
   const seasonTrend = Array.from({ length: 12 }, (_, i) => ({
