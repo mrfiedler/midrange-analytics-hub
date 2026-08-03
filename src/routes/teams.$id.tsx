@@ -64,7 +64,7 @@ function TeamDetail() {
     : undefined;
 
   const standingRow = standingsQ.data?.ok
-    ? standingsQ.data.rows.find((r) => r.abbr === team.abbr)
+    ? standingsQ.data.rows.find((r: LeagueStandingRow) => r.abbr === team.abbr)
     : undefined;
 
   const ortg = liveRow?.ortg ?? team.ortg;
