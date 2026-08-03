@@ -8,6 +8,8 @@ import { MetricTooltip } from "@/components/MetricTooltip";
 import { EvolutionChart } from "@/components/charts/EvolutionChart";
 import { getTeamRoster } from "@/lib/balldontlie.functions";
 import { getLeagueTeamStats } from "@/lib/team-stats.functions";
+import { getLeagueStandings, type LeagueStandingRow } from "@/lib/nba-stats.functions";
+
 import { getCurrentSeason } from "@/lib/season";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Cell } from "recharts";
@@ -29,6 +31,8 @@ function TeamDetail() {
   const season = getCurrentSeason();
   const fetchRoster = useServerFn(getTeamRoster);
   const fetchTeamStats = useServerFn(getLeagueTeamStats);
+  const fetchStandings = useServerFn(getLeagueStandings);
+
 
   const rosterQ = useQuery({
     queryKey: ["roster", id, season],
