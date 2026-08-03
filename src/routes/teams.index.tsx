@@ -64,7 +64,15 @@ function TeamsList() {
         <div>
           <div className="eyebrow">Franquias</div>
           <h1 className="font-display text-4xl md:text-5xl">Times da NBA</h1>
-          <p className="text-muted-foreground mt-2">Ordenados por Net Rating. Clique pra ver o dashboard do time.</p>
+          <p className="text-muted-foreground mt-2">
+            Ordenados por Net Rating · temporada {formatSeason(season)}. Clique pra ver o dashboard do time.
+          </p>
+          {standingsQ.isLoading && (
+            <div className="mt-1 inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+              <Loader2 className="size-3 animate-spin" /> atualizando records…
+            </div>
+          )}
+
         </div>
         <div className="inline-flex rounded-md border border-hairline overflow-hidden">
           {(["all", "East", "West"] as const).map((c) => (
