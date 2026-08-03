@@ -1,6 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { TEAMS } from "@/data/teams";
 import { teamLogoUrl } from "@/lib/nba-logos";
+import { getLeagueStandings } from "@/lib/nba-stats.functions";
+import { getLeagueTeamStats } from "@/lib/team-stats.functions";
+import { getCurrentSeason, formatSeason } from "@/lib/season";
+import { Loader2 } from "lucide-react";
 import { useState } from "react";
 
 export const Route = createFileRoute("/teams/")({
@@ -15,9 +21,42 @@ export const Route = createFileRoute("/teams/")({
 
 function TeamsList() {
   const [conf, setConf] = useState<"all" | "East" | "West">("all");
+  const season = getCurrentSeason();
+  const fetchStandings = useServerFn(getLeagueStandings);
+  const fetchTeamStats = useServerFn(getLeagueTeamStats);
+
+  const standingsQ = useQuery({
+    queryKey: ["leagueStandings", season],
+    queryFn: () => fetchStandings({ data: { season } }),
+    staleTime: 15 * 60_000,
+  });
+
+  const advancedQ = useQuery({
+    queryKey: ["leagueTeamStats", season],
+    queryFn: () => fetchTeamStats({ data: { season } }),
+    staleTime: 30 * 60_000,
+  });
+
+  const standingsByAbbr = new Map(
+    (standingsQ.data?.ok ? standingsQ.data.rows : []).map((r) => [r.abbr, r]),
+  );
+  const advancedByName = (advancedQ.data?.ok ? advancedQ.data.rows : []) ?? [];
+
   const teams = [...TEAMS]
     .filter((t) => conf === "all" || t.conference === conf)
-    .sort((a, b) => (b.ortg - b.drtg) - (a.ortg - a.drtg));
+    .map((t) => {
+      const live = standingsByAbbr.get(t.abbr);
+      const adv = advancedByName.find((r) => r.teamName?.toLowerCase().endsWith(t.name.toLowerCase()));
+      const net = adv ? adv.netRtg : live ? live.diff : t.ortg - t.drtg;
+      return {
+        ...t,
+        record: live ? `${live.wins}-${live.losses}` : t.record,
+        net,
+        isLive: !!live,
+      };
+    })
+    .sort((a, b) => b.net - a.net);
+
 
   return (
     <div className="space-y-6 fade-up">
