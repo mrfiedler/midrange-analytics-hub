@@ -343,3 +343,61 @@ export const getChampionMetrics = createServerFn({ method: "GET" })
       return { ok: false, error: (err as Error).message };
     }
   });
+
+/* ---------- League-wide standings (ESPN, live) ---------- */
+
+const StandingsInput = z.object({
+  season: z.number().int().min(2002).max(2100),
+});
+
+export interface LeagueStandingRow {
+  abbr: string;
+  displayName: string;
+  wins: number;
+  losses: number;
+  pct: number;
+  pointsFor: number;
+  pointsAgainst: number;
+  diff: number;
+}
+
+const ESPN_TO_NBA_ABBR: Record<string, string> = {
+  NY: "NYK", GS: "GSW", SA: "SAS", NO: "NOP", UTAH: "UTA", WSH: "WAS", PHX: "PHX",
+};
+
+export const getLeagueStandings = createServerFn({ method: "GET" })
+  .inputValidator((d) => StandingsInput.parse(d))
+  .handler(async ({ data }): Promise<{ ok: boolean; rows: LeagueStandingRow[]; error?: string }> => {
+    const url = new URL("https://site.web.api.espn.com/apis/v2/sports/basketball/nba/standings");
+    url.searchParams.set("season", String(seasonParam(data.season)));
+    url.searchParams.set("seasontype", "2");
+    try {
+      const json = await cached<any>(`espn:standings:all:${data.season}`, 15 * 60_000, async () => {
+        const res = await fetch(url.toString(), { headers: ESPN_HEADERS, signal: AbortSignal.timeout(10_000) });
+        if (!res.ok) throw new Error(`espn standings ${res.status}`);
+        return res.json();
+      });
+
+      const entries = (json.children ?? []).flatMap((child: any) => child?.standings?.entries ?? []);
+      const rows: LeagueStandingRow[] = entries.map((entry: any) => {
+        const raw = String(entry?.team?.abbreviation ?? "").toUpperCase();
+        const wins = statFromEspnEntry(entry, "wins") ?? 0;
+        const losses = statFromEspnEntry(entry, "losses") ?? 0;
+        const pointsFor = round1(statFromEspnEntry(entry, "avgPointsFor")) ?? 0;
+        const pointsAgainst = round1(statFromEspnEntry(entry, "avgPointsAgainst")) ?? 0;
+        return {
+          abbr: ESPN_TO_NBA_ABBR[raw] ?? raw,
+          displayName: String(entry?.team?.displayName ?? ""),
+          wins,
+          losses,
+          pct: statFromEspnEntry(entry, "winPercent") ?? (wins + losses ? wins / (wins + losses) : 0),
+          pointsFor,
+          pointsAgainst,
+          diff: round1(pointsFor - pointsAgainst) ?? 0,
+        };
+      });
+      return { ok: rows.length > 0, rows };
+    } catch (err) {
+      return { ok: false, rows: [], error: (err as Error).message };
+    }
+  });
