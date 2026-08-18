@@ -49,13 +49,22 @@ const BDL_TO_BBR_TEAM: Record<number, string> = {
   21: "OKC", 22: "ORL", 23: "PHI", 24: "PHO", 25: "POR", 26: "SAC", 27: "SAS", 28: "TOR", 29: "UTA", 30: "WAS",
 };
 
+// Alguns endpoints da ESPN (ex.: /news) bloqueiam User-Agent de navegador
+// falso com 403. Nesses casos repetimos a chamada com headers minimos.
+const ESPN_FALLBACK_HEADERS = { Accept: "application/json, text/plain, */*" } as const;
+
 async function fetchJson<T>(url: string, ttlMs = 30 * 60_000): Promise<T> {
   return cached(`public:${url}`, ttlMs, async () => {
-    const res = await fetch(url.replace(/^http:\/\//, "https://"), { headers: ESPN_HEADERS, signal: AbortSignal.timeout(12_000) });
+    const target = url.replace(/^http:\/\//, "https://");
+    let res = await fetch(target, { headers: ESPN_HEADERS, signal: AbortSignal.timeout(12_000) });
+    if (res.status === 403) {
+      res = await fetch(target, { headers: ESPN_FALLBACK_HEADERS, signal: AbortSignal.timeout(12_000) });
+    }
     if (!res.ok) throw new Error(`public API ${res.status}`);
     return (await res.json()) as T;
   });
 }
+
 
 function espnSeason(startYear: number) {
   return startYear + 1;
