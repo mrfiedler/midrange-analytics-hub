@@ -252,7 +252,7 @@ function GlobalSearch() {
           onFocus={() => setOpen(true)}
           onKeyDown={onKey}
           placeholder="Buscar jogadores, times..."
-          className="flex-1 min-w-0 bg-transparent outline-none placeholder:text-muted-foreground"
+          className="flex-1 min-w-0 bg-transparent outline-none placeholder:text-muted-foreground text-base sm:text-sm"
           aria-label="Busca global"
         />
         {mutation.isPending && <Loader2 className="size-4 animate-spin text-flame" />}
