@@ -103,7 +103,8 @@ function Overview({ d }: { d: GameSummary }) {
   const n = Math.max(g.home.linescores.length, g.away.linescores.length, 4);
   const pl = (i: number) => (i < 4 ? `${i + 1}º` : `OT${i - 3}`);
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
+    <div className="grid gap-6 lg:grid-cols-2 items-start">
+      <div className="space-y-6">
       <section className="mrf-card p-4 overflow-x-auto">
         <h3 className="eyebrow mb-3">Placar por período</h3>
         <table className="w-full text-sm tabular-nums">
@@ -121,6 +122,8 @@ function Overview({ d }: { d: GameSummary }) {
           </tbody>
         </table>
       </section>
+      {d.leaders.length > 0 && <Leaders d={d} />}
+      </div>
       {d.teamStats.length > 0 && (
         <section className="mrf-card p-4">
           <h3 className="eyebrow mb-3">Comparativo dos times</h3>
@@ -138,25 +141,61 @@ function Overview({ d }: { d: GameSummary }) {
           </div>
         </section>
       )}
-      {d.leaders.length > 0 && (
-        <section className="mrf-card p-4 lg:col-span-2">
-          <h3 className="eyebrow mb-3">Líderes do jogo</h3>
-          <div className="grid sm:grid-cols-2 gap-4">
-            {[g.away, g.home].map((t) => (
-              <div key={t.id}>
-                <div className="font-display tracking-widest text-sm mb-1">{t.abbr}</div>
-                {d.leaders.filter((l) => l.teamId === t.id).map((l) => (
-                  <div key={l.category} className="flex justify-between text-sm border-t border-hairline py-1">
-                    <span className="text-muted-foreground">{l.category}</span>
-                    <span>{l.name} · <span className="text-flame">{l.value}</span></span>
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
     </div>
+  );
+}
+
+const CAT_PT: Record<string, string> = { Points: "Pontos", Rebounds: "Rebotes", Assists: "Assistências" };
+
+function Leaders({ d }: { d: GameSummary }) {
+  const g = d.game!;
+  const cats = [...new Set(d.leaders.map((l) => l.category))].slice(0, 3);
+  const [cat, setCat] = useState(cats[0]);
+  const pick = (tid: string) => d.leaders.find((l) => l.teamId === tid && l.category === cat);
+  const num = (v?: string) => parseFloat(v ?? "") || 0;
+  const a = pick(g.away.id), h = pick(g.home.id);
+  const max = Math.max(num(a?.value), num(h?.value), 1);
+  return (
+    <section className="mrf-card p-4">
+      <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
+        <h3 className="eyebrow">Líderes do jogo</h3>
+        <div className="flex gap-1">
+          {cats.map((c) => (
+            <button key={c} onClick={() => setCat(c)}
+              className={`px-2.5 py-1 rounded text-[10px] font-display uppercase tracking-widest transition-colors ${cat === c ? "flame-bg text-primary-foreground" : "bg-surface-2 text-muted-foreground hover:text-foreground"}`}>
+              {CAT_PT[c] ?? c}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        {[{ t: g.away, l: a }, { t: g.home, l: h }].map(({ t, l }) => (
+          <div key={t.id + cat} className="fade-up rounded-lg border border-hairline bg-surface-2/50 p-3 flex flex-col items-center text-center">
+            {l ? (
+              <Link to="/players/$id" params={{ id: l.athleteId }} className="group flex flex-col items-center">
+                <div className="relative">
+                  <img
+                    src={`https://a.espncdn.com/i/headshots/nba/players/full/${l.athleteId}.png`}
+                    alt={l.name}
+                    onError={(e) => ((e.currentTarget as HTMLImageElement).style.visibility = "hidden")}
+                    className="size-20 md:size-24 rounded-full object-cover bg-surface border border-hairline group-hover:border-flame transition-colors"
+                  />
+                  {t.logo && <img src={t.logo} alt={t.abbr} className="absolute -bottom-1 -right-1 size-7 rounded-full bg-surface p-0.5 border border-hairline" />}
+                </div>
+                <div className="mt-2 text-sm font-medium group-hover:text-flame leading-tight">{l.name}</div>
+                <div className="text-[10px] text-muted-foreground uppercase tracking-widest">{t.abbr}{l.pos ? ` · ${l.pos}` : ""}</div>
+                <div className="mt-1 font-display text-3xl text-flame tabular-nums">{l.value}</div>
+                <div className="mt-1 h-1.5 w-full rounded bg-surface overflow-hidden">
+                  <div className="h-full flame-bg transition-all duration-500" style={{ width: `${(num(l.value) / max) * 100}%` }} />
+                </div>
+              </Link>
+            ) : (
+              <span className="text-xs text-muted-foreground">Sem dados</span>
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 
