@@ -108,11 +108,42 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="flex-1 min-w-0 flex flex-col">
         <Header onOpenMenu={() => setMobileOpen(true)} />
         <main className="flex-1 min-w-0 p-4 sm:p-5 md:p-8">{children}</main>
-        <footer className="px-4 sm:px-5 md:px-8 py-5 border-t border-hairline text-[11px] text-muted-foreground/70 flex flex-wrap items-center gap-3 justify-between">
+        <footer className="px-4 sm:px-5 md:px-8 py-5 pb-24 md:pb-5 border-t border-hairline text-[11px] text-muted-foreground/70 flex flex-wrap items-center gap-3 justify-between">
           <span>Dados: ESPN · Estatísticas atualizadas diariamente</span>
           <span className="font-display uppercase tracking-widest">midrange · frenzy</span>
         </footer>
       </div>
+
+      {/* Mobile bottom tab bar */}
+      <nav
+        aria-label="Navegação principal"
+        className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-hairline bg-sidebar/95 backdrop-blur-md"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      >
+        <div className="grid grid-cols-5">
+          {NAV.slice(0, 4).map(({ to, label, Icon }) => {
+            const active = to === "/" ? pathname === "/" : pathname.startsWith(to);
+            return (
+              <Link
+                key={to}
+                to={to}
+                className={`relative flex flex-col items-center justify-center gap-1 h-16 text-[10px] font-display uppercase tracking-wider active:scale-95 transition ${active ? "text-flame" : "text-muted-foreground"}`}
+              >
+                {active && <span className="absolute top-0 h-[2px] w-8 rounded-b bg-flame" />}
+                <Icon className="size-5" />
+                <span className="truncate max-w-full px-1">{label === "Dashboard" ? "Início" : label}</span>
+              </Link>
+            );
+          })}
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="flex flex-col items-center justify-center gap-1 h-16 text-[10px] font-display uppercase tracking-wider text-muted-foreground active:scale-95 transition"
+          >
+            <Menu className="size-5" />
+            Mais
+          </button>
+        </div>
+      </nav>
     </div>
   );
 }
@@ -121,13 +152,6 @@ function Header({ onOpenMenu }: { onOpenMenu: () => void }) {
   return (
     <header className="sticky top-0 z-30 border-b border-hairline bg-background/85 backdrop-blur-md">
       <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-5 md:px-8 h-14 sm:h-16">
-        <button
-          aria-label="Abrir menu"
-          onClick={onOpenMenu}
-          className="md:hidden rounded-md p-2 hover:bg-surface"
-        >
-          <Menu className="size-5" />
-        </button>
         <Link to="/" className="md:hidden flex items-center shrink-0">
           <img src={LOGO_URL} alt="MRF" className="h-8 w-auto" />
         </Link>

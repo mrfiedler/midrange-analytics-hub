@@ -95,7 +95,7 @@ function TeamsList() {
               params={{ id: String(t.id) }}
               className="mrf-card mrf-card-hover p-4 flex items-center gap-4 group"
             >
-              <div className="size-16 grid place-items-center shrink-0">
+              <div className="size-12 sm:size-16 grid place-items-center shrink-0 overflow-hidden text-[0px]">
                 {logo ? (
                   <img
                     src={logo}
