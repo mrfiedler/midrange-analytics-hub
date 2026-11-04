@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { getBoxLeaders } from "./game-leaders";
 
 const UA = { Accept: "application/json" };
 
@@ -120,7 +121,7 @@ export const getGameSummary = createServerFn({ method: "GET" })
       const bt = j.boxscore?.teams ?? [];
       const ht = bt.find((t: any) => String(t.team?.id) === home.id);
       const at = bt.find((t: any) => String(t.team?.id) === away.id);
-      const teamStats = (ht?.statistics ?? []).map((s: any) => ({
+      const teamStats = (game.state === "pre" ? [] : ht?.statistics ?? []).map((s: any) => ({
         label: s.label ?? s.abbreviation ?? s.name,
         home: s.displayValue,
         away: at?.statistics?.find((x: any) => x.name === s.name)?.displayValue ?? "-",
@@ -155,16 +156,7 @@ export const getGameSummary = createServerFn({ method: "GET" })
           shot: valid ? { x, y, made: !!p.scoringPlay } : undefined,
         };
       });
-      const leaders = (j.leaders ?? []).flatMap((t: any) =>
-        (t.leaders ?? []).map((l: any) => ({
-          teamId: String(t.team?.id),
-          category: l.displayName ?? l.name,
-          name: l.leaders?.[0]?.athlete?.displayName ?? "",
-          athleteId: String(l.leaders?.[0]?.athlete?.id ?? ""),
-          pos: l.leaders?.[0]?.athlete?.position?.abbreviation ?? "",
-          value: l.leaders?.[0]?.displayValue ?? "",
-        })),
-      );
+      const leaders = getBoxLeaders(game.state, box);
       return { ok: true, game, teamStats, box, plays, leaders };
     } catch (err) {
       console.error("summary", err);

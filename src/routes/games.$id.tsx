@@ -28,7 +28,10 @@ function GamePage() {
   const q = useQuery({
     queryKey: ["game", id],
     queryFn: () => fn({ data: { id } }),
-    refetchInterval: (query) => (query.state.data?.game?.state === "in" ? 20_000 : false),
+    refetchInterval: (query) => {
+      const state = query.state.data?.game?.state;
+      return state === "in" ? 20_000 : state === "pre" ? 60_000 : false;
+    },
   });
   const [tab, setTab] = useState<(typeof TABS)[number]>("Placar");
 
@@ -99,7 +102,8 @@ function TeamHead({ t }: { t: GameTeam }) {
 }
 
 function Overview({ d }: { d: GameSummary }) {
-  const g = d.game!;
+  const g = d.game;
+  if (!g) return null;
   const n = Math.max(g.home.linescores.length, g.away.linescores.length, 4);
   const pl = (i: number) => (i < 4 ? `${i + 1}º` : `OT${i - 3}`);
   return (
@@ -115,14 +119,14 @@ function Overview({ d }: { d: GameSummary }) {
             {[g.away, g.home].map((t) => (
               <tr key={t.id} className="border-t border-hairline">
                 <td className="py-2 font-display tracking-widest">{t.abbr}</td>
-                {Array.from({ length: n }, (_, i) => <td key={i} className="text-center">{t.linescores[i] ?? "-"}</td>)}
+                {Array.from({ length: n }, (_, i) => <td key={i} className="text-center">{t.linescores[i] ?? (g.state === "pre" ? 0 : "-")}</td>)}
                 <td className="text-center font-display">{t.score}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </section>
-      {d.leaders.length > 0 && <Leaders d={d} />}
+      {g.state !== "pre" && d.leaders.length > 0 && <Leaders d={d} />}
       </div>
       {d.teamStats.length > 0 && (
         <section className="mrf-card p-4">

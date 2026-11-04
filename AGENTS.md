@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Derive game leaders exclusively from the event box score through `game-leaders.ts`, never summary leader averages, because ESPN includes season leaders before tip-off.
