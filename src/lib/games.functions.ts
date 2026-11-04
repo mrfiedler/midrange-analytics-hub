@@ -90,7 +90,7 @@ export interface GameSummary {
   teamStats: { label: string; home: string; away: string }[];
   box: { teamId: string; labels: string[]; players: BoxPlayer[] }[];
   plays: GamePlay[];
-  leaders: { teamId: string; category: string; name: string; value: string }[];
+  leaders: { teamId: string; category: string; name: string; value: string; athleteId: string; pos: string }[];
 }
 
 export const getGameSummary = createServerFn({ method: "GET" })
@@ -160,6 +160,8 @@ export const getGameSummary = createServerFn({ method: "GET" })
           teamId: String(t.team?.id),
           category: l.displayName ?? l.name,
           name: l.leaders?.[0]?.athlete?.displayName ?? "",
+          athleteId: String(l.leaders?.[0]?.athlete?.id ?? ""),
+          pos: l.leaders?.[0]?.athlete?.position?.abbreviation ?? "",
           value: l.leaders?.[0]?.displayValue ?? "",
         })),
       );
