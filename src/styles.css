@@ -44,6 +44,7 @@
   --color-surface: var(--surface);      /* card surface */
   --color-surface-2: var(--surface-2);  /* elevated surface */
   --color-hairline: var(--hairline);    /* subtle border */
+  --color-header: var(--header);        /* top bar background */
 
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
@@ -129,79 +130,139 @@
   --sidebar-accent-foreground: oklch(0.99 0 0);
   --sidebar-border: var(--hairline);
   --sidebar-ring: var(--flame);
+
+  /* Chrome + logo + hero (por tema) */
+  --header: var(--background);
+  --logo-fg: oklch(0.98 0 0);
+  --hero-fg: var(--foreground);
+  --hero-muted: var(--muted-foreground);
 }
 
-/* Tema claro */
+/* ============================================================
+   Tema claro: superfícies brancas, texto navy profundo,
+   acentos mais escuros para contraste, sombras suaves.
+   ============================================================ */
 .light {
-  --background: oklch(0.97 0.01 250);
-  --foreground: oklch(0.20 0.04 252);
+  --background: oklch(0.975 0.008 250);
+  --foreground: oklch(0.22 0.05 252);
 
   --surface: oklch(1 0 0);
-  --surface-2: oklch(0.94 0.015 250);
-  --hairline: oklch(0.87 0.02 250);
+  --surface-2: oklch(0.955 0.012 250);
+  --hairline: oklch(0.895 0.018 250);
 
   --popover: var(--surface);
   --popover-foreground: var(--foreground);
 
-  --secondary: oklch(0.93 0.02 250);
-  --secondary-foreground: oklch(0.20 0.04 252);
+  --primary: oklch(0.56 0.21 28);
+  --primary-foreground: oklch(0.99 0 0);
 
-  --muted: oklch(0.93 0.02 250);
-  --muted-foreground: oklch(0.48 0.05 250);
+  --secondary: oklch(0.935 0.015 250);
+  --secondary-foreground: oklch(0.22 0.05 252);
 
-  --accent: oklch(0.60 0.13 235);
+  --muted: oklch(0.935 0.015 250);
+  --muted-foreground: oklch(0.46 0.04 250);
+
+  --accent: oklch(0.52 0.13 235);
   --accent-foreground: oklch(0.98 0 0);
 
-  --input: oklch(0.87 0.02 250);
+  --input: oklch(0.895 0.018 250);
+  --ring: oklch(0.56 0.21 28);
 
-  --court: oklch(0.55 0.14 235);
-  --amber: oklch(0.70 0.15 65);
+  --flame: oklch(0.56 0.21 28);
+  --court: oklch(0.52 0.13 235);
+  --amber: oklch(0.62 0.14 65);
 
-  --sidebar: oklch(0.95 0.015 250);
-  --sidebar-foreground: oklch(0.20 0.04 252);
-  --sidebar-accent: oklch(0.91 0.02 250);
-  --sidebar-accent-foreground: oklch(0.20 0.04 252);
+  --chart-1: oklch(0.56 0.21 28);
+  --chart-2: oklch(0.55 0.13 235);
+  --chart-3: oklch(0.65 0.15 65);
+  --chart-4: oklch(0.55 0.12 200);
+  --chart-5: oklch(0.58 0.15 145);
 
-  --gradient-hero: radial-gradient(60% 80% at 20% 0%, oklch(0.78 0.13 235 / 0.18) 0%, transparent 60%),
-                   radial-gradient(50% 70% at 100% 0%, oklch(0.62 0.23 28 / 0.14) 0%, transparent 55%),
-                   linear-gradient(180deg, oklch(0.96 0.015 250) 0%, oklch(0.93 0.02 250) 100%);
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.22 0.05 252);
+  --sidebar-primary: var(--flame);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.935 0.015 250);
+  --sidebar-accent-foreground: oklch(0.22 0.05 252);
+  --sidebar-border: var(--hairline);
+  --sidebar-ring: var(--flame);
+
+  --header: oklch(1 0 0);
+  --logo-fg: oklch(0.25 0.06 252);
+  --hero-fg: var(--foreground);
+  --hero-muted: var(--muted-foreground);
+
+  --shadow-card: 0 1px 2px oklch(0.3 0.05 252 / 0.05), 0 12px 28px -16px oklch(0.3 0.05 252 / 0.18);
+  --shadow-glow-flame: 0 0 0 1px oklch(0.56 0.21 28 / 0.25), 0 10px 26px -10px oklch(0.56 0.21 28 / 0.30);
+  --shadow-glow-court: 0 0 0 1px oklch(0.52 0.13 235 / 0.30), 0 10px 26px -10px oklch(0.52 0.13 235 / 0.30);
+
+  --gradient-hero: radial-gradient(60% 80% at 20% 0%, oklch(0.52 0.13 235 / 0.10) 0%, transparent 60%),
+                   radial-gradient(50% 70% at 100% 0%, oklch(0.56 0.21 28 / 0.10) 0%, transparent 55%),
+                   linear-gradient(180deg, oklch(0.99 0.005 250) 0%, oklch(0.955 0.012 250) 100%);
 }
 
-/* Evening: mescla entre escuro e claro (crepúsculo quente) */
+/* ============================================================
+   Evening: mistura real de claro e escuro.
+   Chrome escuro (sidebar, header, hero em navy profundo)
+   sobre área de conteúdo clara e quente com cards brancos.
+   ============================================================ */
 .evening {
-  --background: oklch(0.44 0.045 265);
-  --foreground: oklch(0.96 0.01 80);
+  --background: oklch(0.955 0.012 85);
+  --foreground: oklch(0.24 0.05 252);
 
-  --surface: oklch(0.50 0.05 265);
-  --surface-2: oklch(0.56 0.055 265);
-  --hairline: oklch(0.64 0.05 265);
+  --surface: oklch(0.99 0.005 85);
+  --surface-2: oklch(0.93 0.018 85);
+  --hairline: oklch(0.875 0.02 85);
 
-  --popover: var(--surface-2);
+  --popover: var(--surface);
   --popover-foreground: var(--foreground);
 
-  --secondary: oklch(0.56 0.055 265);
-  --secondary-foreground: oklch(0.96 0.01 80);
+  --primary: oklch(0.56 0.21 28);
+  --primary-foreground: oklch(0.99 0 0);
 
-  --muted: oklch(0.56 0.055 265);
-  --muted-foreground: oklch(0.84 0.04 260);
+  --secondary: oklch(0.93 0.018 85);
+  --secondary-foreground: oklch(0.24 0.05 252);
 
-  --accent: oklch(0.80 0.12 235);
-  --accent-foreground: oklch(0.25 0.04 252);
+  --muted: oklch(0.93 0.018 85);
+  --muted-foreground: oklch(0.47 0.04 260);
 
-  --input: oklch(0.56 0.055 265);
+  --accent: oklch(0.52 0.13 235);
+  --accent-foreground: oklch(0.98 0 0);
 
-  --flame: oklch(0.68 0.22 30);
-  --court: oklch(0.82 0.12 235);
-  --amber: oklch(0.82 0.15 75);
+  --input: oklch(0.875 0.02 85);
+  --ring: oklch(0.56 0.21 28);
 
-  --sidebar: oklch(0.40 0.045 265);
-  --sidebar-foreground: oklch(0.94 0.01 80);
-  --sidebar-accent: oklch(0.50 0.05 265);
-  --sidebar-accent-foreground: oklch(0.96 0.01 80);
+  --flame: oklch(0.58 0.22 28);
+  --court: oklch(0.52 0.13 235);
+  --amber: oklch(0.62 0.14 65);
+
+  --chart-1: oklch(0.56 0.21 28);
+  --chart-2: oklch(0.55 0.13 235);
+  --chart-3: oklch(0.65 0.15 65);
+  --chart-4: oklch(0.55 0.12 200);
+  --chart-5: oklch(0.58 0.15 145);
+
+  --sidebar: oklch(0.22 0.05 252);
+  --sidebar-foreground: oklch(0.93 0.01 250);
+  --sidebar-primary: var(--flame);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.30 0.06 252);
+  --sidebar-accent-foreground: oklch(0.98 0 0);
+  --sidebar-border: oklch(0.34 0.06 252);
+  --sidebar-ring: var(--flame);
+
+  --header: oklch(0.22 0.05 252);
+  --logo-fg: oklch(0.97 0.01 85);
+  --hero-fg: oklch(0.96 0.01 85);
+  --hero-muted: oklch(0.78 0.04 260);
+
+  --shadow-card: 0 1px 2px oklch(0.3 0.05 252 / 0.05), 0 12px 28px -16px oklch(0.3 0.05 252 / 0.18);
+  --shadow-glow-flame: 0 0 0 1px oklch(0.56 0.21 28 / 0.25), 0 10px 26px -10px oklch(0.56 0.21 28 / 0.30);
+  --shadow-glow-court: 0 0 0 1px oklch(0.52 0.13 235 / 0.30), 0 10px 26px -10px oklch(0.52 0.13 235 / 0.30);
 
   --gradient-hero: radial-gradient(60% 80% at 20% 0%, oklch(0.78 0.13 235 / 0.20) 0%, transparent 60%),
-                   radial-gradient(50% 70% at 100% 0%, oklch(0.68 0.22 30 / 0.28) 0%, transparent 55%),
-                   linear-gradient(180deg, oklch(0.50 0.05 265) 0%, oklch(0.42 0.045 265) 100%);
+                   radial-gradient(50% 70% at 100% 0%, oklch(0.62 0.23 28 / 0.28) 0%, transparent 55%),
+                   linear-gradient(180deg, oklch(0.30 0.06 255) 0%, oklch(0.22 0.05 252) 100%);
 }
 
 @layer base {
@@ -274,6 +335,15 @@
   letter-spacing: 0.18em;
   font-size: 0.72rem;
   color: var(--muted-foreground);
+}
+
+/* Texto dentro do hero: segue o contraste do gradiente do tema */
+@utility hero-fg {
+  color: var(--hero-fg);
+}
+
+@utility hero-muted {
+  color: var(--hero-muted);
 }
 
 @utility number-xl {
