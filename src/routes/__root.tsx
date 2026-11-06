@@ -23,6 +23,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppShell } from "@/components/AppShell";
 import { ModeProvider } from "@/lib/mode-context";
+import { ThemeProvider } from "@/lib/theme-context";
 
 function NotFoundComponent() {
   return (
@@ -116,11 +117,13 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ModeProvider>
-        <AppShell>
-          <Outlet />
-        </AppShell>
-      </ModeProvider>
+      <ThemeProvider>
+        <ModeProvider>
+          <AppShell>
+            <Outlet />
+          </AppShell>
+        </ModeProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

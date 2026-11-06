@@ -48,7 +48,7 @@ export function ChampionBanner() {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="relative overflow-hidden rounded-2xl border border-hairline p-6 md:p-8"
+      className="relative overflow-hidden rounded-2xl border border-hairline p-6 md:p-8 h-full"
       style={{
         background: `linear-gradient(135deg, ${champ.teamColors.primary}33 0%, ${champ.teamColors.secondary}22 60%, var(--surface) 100%)`,
       }}
@@ -59,16 +59,25 @@ export function ChampionBanner() {
           background: `radial-gradient(60% 90% at 90% 50%, ${champ.teamColors.primary} 0%, transparent 60%)`,
         }}
       />
-      <div className="relative flex flex-col md:flex-row items-start md:items-center gap-6">
-        <div className="flex-1 min-w-0">
-          <div className="eyebrow inline-flex items-center gap-1.5" style={{ color: champ.teamColors.secondary }}>
-            <Trophy className="size-3.5" /> Campeão NBA {champ.seasonLabel}
+      <div className="relative flex flex-col gap-5 h-full">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <div className="eyebrow inline-flex items-center gap-1.5" style={{ color: champ.teamColors.secondary }}>
+              <Trophy className="size-3.5" /> Campeão NBA {champ.seasonLabel}
+            </div>
+            <h2 className="font-display text-3xl md:text-4xl leading-tight mt-1">{champ.team}</h2>
+            <div className="mt-2 text-sm text-muted-foreground">
+              {champ.seriesResult} · métricas atualizadas por bases públicas
+            </div>
           </div>
-          <h2 className="font-display text-3xl md:text-5xl leading-tight mt-1">{champ.team}</h2>
-          <div className="mt-2 text-sm text-muted-foreground">
-            {champ.seriesResult} · métricas atualizadas por bases públicas
-          </div>
-          <div className="mt-4 grid grid-cols-2 sm:grid-cols-5 gap-2 max-w-xl">
+          {logo && (
+            <div className="shrink-0 size-20 md:size-24 grid place-items-center">
+              <img src={logo} alt={champ.team} className="size-full object-contain drop-shadow-2xl" />
+            </div>
+          )}
+        </div>
+        <div className="flex-1 min-w-0 flex flex-col justify-end">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             <Stat label="Record" value={champ.record} />
             <Stat label="PPG" value={champ.ppg.toFixed(1)} />
             <Stat label="Ortg" value={champ.ortg.toFixed(1)} />
@@ -79,11 +88,6 @@ export function ChampionBanner() {
             Cestinha: <span className="text-foreground">{champ.leadingScorer.name}</span> · {champ.leadingScorer.ppg.toFixed(1)} PPG
           </div>
         </div>
-        {logo && (
-          <div className="shrink-0 size-32 md:size-40 grid place-items-center">
-            <img src={logo} alt={champ.team} className="size-full object-contain drop-shadow-2xl" />
-          </div>
-        )}
       </div>
     </motion.section>
   );

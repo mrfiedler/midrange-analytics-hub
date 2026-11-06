@@ -21,7 +21,8 @@ function Dashboard() {
 
   return (
     <div className="space-y-8">
-      {/* Hero */}
+      {/* Hero + Campeão lado a lado */}
+      <div className="grid gap-6 lg:grid-cols-[3fr_2fr] items-stretch">
       <section className="relative overflow-hidden rounded-2xl border border-hairline hero-bg p-6 md:p-10 fade-up">
         <div className="absolute inset-0 pointer-events-none opacity-[0.04]"
              style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "18px 18px" }} />
@@ -49,6 +50,7 @@ function Dashboard() {
 
       {/* Champion banner */}
       <ChampionBanner />
+      </div>
 
       {/* Live scoreboard via cdn.nba.com */}
       <LiveScoreboard />

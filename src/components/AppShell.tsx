@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ModeToggle } from "@/components/ModeToggle";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { searchPlayers } from "@/lib/balldontlie.functions";
 import { TEAMS } from "@/data/teams";
 import { PlayerAvatar } from "@/components/players/PlayerAvatar";
@@ -160,6 +161,7 @@ function Header({ onOpenMenu }: { onOpenMenu: () => void }) {
 
         <div className="ml-auto flex items-center gap-2 sm:gap-3">
           <ModeToggle />
+          <ThemeToggle />
         </div>
       </div>
       <div className="h-[1.5px] w-full bg-gradient-to-r from-transparent via-flame/50 to-transparent" />
