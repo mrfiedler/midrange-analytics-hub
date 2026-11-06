@@ -88,11 +88,6 @@ export function ChampionBanner() {
             Cestinha: <span className="text-foreground">{champ.leadingScorer.name}</span> · {champ.leadingScorer.ppg.toFixed(1)} PPG
           </div>
         </div>
-        {logo && (
-          <div className="shrink-0 size-32 md:size-40 grid place-items-center">
-            <img src={logo} alt={champ.team} className="size-full object-contain drop-shadow-2xl" />
-          </div>
-        )}
       </div>
     </motion.section>
   );
