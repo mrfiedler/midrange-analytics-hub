@@ -23,7 +23,7 @@ function Dashboard() {
     <div className="space-y-8">
       {/* Hero + Campeão lado a lado */}
       <div className="grid gap-6 lg:grid-cols-[3fr_2fr] items-stretch">
-      <section className="relative overflow-hidden rounded-2xl border border-hairline hero-bg p-6 md:p-10 fade-up">
+      <section className="relative overflow-hidden rounded-2xl border border-hairline hero-bg hero-fg p-6 md:p-10 fade-up">
         <div className="absolute inset-0 pointer-events-none opacity-[0.04]"
              style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "18px 18px" }} />
         <div className="relative max-w-3xl">
@@ -31,17 +31,17 @@ function Dashboard() {
           <h1 className="mt-2 font-display text-4xl md:text-6xl leading-[0.95] tracking-tight">
             Cada arremesso conta. <span className="text-flame">Cada métrica importa.</span>
           </h1>
-          <p className="mt-3 text-muted-foreground max-w-xl">
+          <p className="mt-3 hero-muted max-w-xl">
             Acompanhe líderes, compare jogadores e entenda o que cada sigla significa - do passe certeiro à eficiência verdadeira.
           </p>
           <div className="mt-6 flex flex-wrap gap-2">
             <Link to="/compare" className="inline-flex items-center gap-2 rounded-md flame-bg px-4 py-2.5 text-sm font-display uppercase tracking-widest text-white hover:opacity-95">
               Abrir comparador <ArrowRight className="size-4" />
             </Link>
-            <Link to="/players" className="inline-flex items-center gap-2 rounded-md border border-hairline bg-surface/70 backdrop-blur px-4 py-2.5 text-sm font-display uppercase tracking-widest text-foreground hover:border-flame/60">
+            <Link to="/players" className="inline-flex items-center gap-2 rounded-md border border-hairline bg-surface/70 backdrop-blur px-4 py-2.5 text-sm font-display uppercase tracking-widest hero-fg hover:border-flame/60">
               Buscar jogadores
             </Link>
-            <Link to="/seasons" className="inline-flex items-center gap-2 rounded-md border border-hairline bg-surface/70 backdrop-blur px-4 py-2.5 text-sm font-display uppercase tracking-widest text-foreground hover:border-accent/70">
+            <Link to="/seasons" className="inline-flex items-center gap-2 rounded-md border border-hairline bg-surface/70 backdrop-blur px-4 py-2.5 text-sm font-display uppercase tracking-widest hero-fg hover:border-accent/70">
               Temporadas
             </Link>
           </div>
@@ -85,7 +85,7 @@ function Dashboard() {
               <div className="mt-4 grid grid-cols-4 gap-1.5 text-[10px] font-display uppercase tracking-widest">
                 {(["ruim","medio","bom","elite"] as const).map((k, i) => (
                   <div key={k} className="rounded p-2 text-center"
-                       style={{ background: ["oklch(0.3 0.05 25)", "oklch(0.3 0.04 60)", "oklch(0.32 0.08 145)", "oklch(0.35 0.18 305)"][i] }}>
+                       style={{ color: "oklch(0.97 0 0)", background: ["oklch(0.3 0.05 25)", "oklch(0.3 0.04 60)", "oklch(0.32 0.08 145)", "oklch(0.35 0.18 305)"][i] }}>
                     <div>{k}</div>
                     <div className="opacity-80 normal-case tracking-normal mt-0.5">{(metricOfDay.scale as any)[k]}</div>
                   </div>
