@@ -5,13 +5,10 @@ import { useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ModeToggle } from "@/components/ModeToggle";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { Logo } from "@/components/Logo";
 import { searchPlayers } from "@/lib/balldontlie.functions";
 import { TEAMS } from "@/data/teams";
 import { PlayerAvatar } from "@/components/players/PlayerAvatar";
-
-// Static path served from /public - works on Vercel, Lovable, or any host
-// without depending on the internal /__l5e/... proxy.
-const LOGO_URL = "/mrf-logo.png";
 
 const NAV = [
   { to: "/",          label: "Dashboard",              Icon: Home },
@@ -36,7 +33,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* Desktop sidebar */}
       <aside className="hidden md:flex flex-col w-60 shrink-0 border-r border-hairline bg-sidebar sticky top-0 h-screen">
         <Link to="/" className="px-5 pt-6 pb-4 border-b border-hairline group">
-          <img src={LOGO_URL} alt="Midrange Frenzy" className="h-20 w-auto transition-transform group-hover:scale-[1.02]" />
+          <Logo className="h-20 transition-transform group-hover:scale-[1.02]" />
           <div className="mt-2 h-[2px] w-12 bg-flame rounded-full" />
         </Link>
         <nav className="flex-1 px-3 py-4 space-y-0.5 scrollbar-thin overflow-y-auto">
@@ -74,7 +71,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="absolute inset-0 bg-black/60" onClick={() => setMobileOpen(false)} />
           <aside className="relative flex flex-col w-64 max-w-[80vw] h-full bg-sidebar border-r border-hairline">
             <div className="flex items-center justify-between px-4 pt-5 pb-3 border-b border-hairline">
-              <img src={LOGO_URL} alt="Midrange Frenzy" className="h-12 w-auto" />
+              <Logo className="h-12" />
               <button
                 aria-label="Fechar menu"
                 onClick={() => setMobileOpen(false)}
@@ -151,10 +148,10 @@ export function AppShell({ children }: { children: ReactNode }) {
 
 function Header({ onOpenMenu }: { onOpenMenu: () => void }) {
   return (
-    <header className="sticky top-0 z-30 border-b border-hairline bg-background/85 backdrop-blur-md">
+    <header className="sticky top-0 z-30 border-b border-hairline bg-header/85 backdrop-blur-md">
       <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-5 md:px-8 h-14 sm:h-16">
         <Link to="/" className="md:hidden flex items-center shrink-0">
-          <img src={LOGO_URL} alt="MRF" className="h-8 w-auto" />
+          <Logo className="h-8" alt="MRF" />
         </Link>
 
         <GlobalSearch />
