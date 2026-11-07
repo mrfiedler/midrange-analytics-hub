@@ -9,6 +9,7 @@ import { Logo } from "@/components/Logo";
 import { searchPlayers } from "@/lib/balldontlie.functions";
 import { TEAMS } from "@/data/teams";
 import { PlayerAvatar } from "@/components/players/PlayerAvatar";
+import { Button } from "@/components/ui/button";
 
 const NAV = [
   { to: "/",          label: "Dashboard",              Icon: Home },
@@ -31,7 +32,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen flex w-full bg-background text-foreground">
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex flex-col w-60 shrink-0 border-r border-hairline bg-sidebar sticky top-0 h-screen">
+      <aside className="hidden md:flex flex-col w-60 shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground sticky top-0 h-screen">
         <Link to="/" className="px-5 pt-6 pb-4 border-b border-hairline group">
           <Logo className="h-20 transition-transform group-hover:scale-[1.02]" />
           <div className="mt-2 h-[2px] w-12 bg-flame rounded-full" />
@@ -46,8 +47,8 @@ export function AppShell({ children }: { children: ReactNode }) {
                 className={[
                   "group relative flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
                   active
-                    ? "bg-surface text-foreground"
-                    : "text-muted-foreground hover:bg-surface hover:text-foreground",
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                 ].join(" ")}
               >
                 {active && <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r bg-flame" />}
@@ -57,7 +58,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             );
           })}
         </nav>
-        <div className="px-4 py-3 border-t border-hairline text-[10px] uppercase tracking-widest text-muted-foreground/70">
+        <div className="px-4 py-3 border-t border-sidebar-border text-[10px] uppercase tracking-widest text-sidebar-foreground">
           <span className="inline-flex items-center gap-2">
             <span className="size-1.5 rounded-full bg-flame pulse-dot" />
             v1.0 · powered by ESPN
@@ -68,14 +69,14 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* Mobile drawer */}
       {mobileOpen && (
         <div className="md:hidden fixed inset-0 z-50 flex">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setMobileOpen(false)} />
-          <aside className="relative flex flex-col w-64 max-w-[80vw] h-full bg-sidebar border-r border-hairline">
+          <div className="absolute inset-0 bg-foreground/60" onClick={() => setMobileOpen(false)} />
+          <aside role="dialog" aria-modal="true" aria-label="Menu de navegação" className="relative flex flex-col w-72 max-w-[85vw] h-full bg-sidebar text-sidebar-foreground border-r border-sidebar-border">
             <div className="flex items-center justify-between px-4 pt-5 pb-3 border-b border-hairline">
               <Logo className="h-12" />
               <button
                 aria-label="Fechar menu"
                 onClick={() => setMobileOpen(false)}
-                className="rounded-md p-2 hover:bg-surface"
+                className="rounded-md p-2 text-sidebar-foreground hover:bg-sidebar-accent"
               >
                 <X className="size-5" />
               </button>
@@ -89,7 +90,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                     to={to}
                     className={[
                       "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors",
-                      active ? "bg-surface text-foreground" : "text-muted-foreground hover:bg-surface hover:text-foreground",
+                      active ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                     ].join(" ")}
                   >
                     <Icon className={`size-4 shrink-0 ${active ? "text-flame" : ""}`} />
@@ -104,7 +105,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {/* Main column */}
       <div className="flex-1 min-w-0 flex flex-col">
-        <Header onOpenMenu={() => setMobileOpen(true)} />
+        <Header />
         <main className="flex-1 min-w-0 p-4 sm:p-5 md:p-8">{children}</main>
         <footer className="px-4 sm:px-5 md:px-8 py-5 pb-24 md:pb-5 border-t border-hairline text-[11px] text-muted-foreground/70 flex flex-wrap items-center gap-3 justify-between">
           <span>Dados: ESPN · Estatísticas atualizadas diariamente</span>
@@ -115,7 +116,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* Mobile bottom tab bar */}
       <nav
         aria-label="Navegação principal"
-        className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-hairline bg-sidebar/95 backdrop-blur-md"
+        className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-hairline bg-surface/95 text-foreground backdrop-blur-md"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
         <div className="grid grid-cols-5">
@@ -125,38 +126,41 @@ export function AppShell({ children }: { children: ReactNode }) {
               <Link
                 key={to}
                 to={to}
-                className={`relative flex flex-col items-center justify-center gap-1 h-16 text-[10px] font-display uppercase tracking-wider active:scale-95 transition ${active ? "text-flame" : "text-muted-foreground"}`}
+                aria-current={active ? "page" : undefined}
+                className={`relative flex min-w-0 flex-col items-center justify-center gap-1 h-16 text-xs font-medium transition-colors ${active ? "text-flame bg-flame/10" : "text-muted-foreground hover:text-foreground"}`}
               >
                 {active && <span className="absolute top-0 h-[2px] w-8 rounded-b bg-flame" />}
                 <Icon className="size-5" />
-                <span className="truncate max-w-full px-1">{label === "Dashboard" ? "Início" : label}</span>
+                <span className="truncate max-w-full px-1">{label === "Dashboard" ? "Início" : label === "Comparador" ? "Comparar" : label}</span>
               </Link>
             );
           })}
-          <button
+          <Button variant="ghost"
+            aria-label="Abrir menu de navegação"
+            aria-expanded={mobileOpen}
             onClick={() => setMobileOpen(true)}
-            className="flex flex-col items-center justify-center gap-1 h-16 text-[10px] font-display uppercase tracking-wider text-muted-foreground active:scale-95 transition"
+            className={`flex flex-col items-center justify-center gap-1 h-16 rounded-none px-0 text-xs font-medium hover:bg-surface-2 hover:text-foreground ${NAV.slice(4).some(({ to }) => pathname.startsWith(to)) ? "text-flame bg-flame/10" : "text-muted-foreground"}`}
           >
             <Menu className="size-5" />
-            Mais
-          </button>
+            Menu
+          </Button>
         </div>
       </nav>
     </div>
   );
 }
 
-function Header({ onOpenMenu }: { onOpenMenu: () => void }) {
+function Header() {
   return (
     <header className="sticky top-0 z-30 border-b border-hairline bg-header/85 backdrop-blur-md">
-      <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-5 md:px-8 h-14 sm:h-16">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-4 py-2 sm:flex sm:gap-3 sm:px-5 md:px-8 sm:h-16 sm:py-0">
         <Link to="/" className="md:hidden flex items-center shrink-0">
           <Logo className="h-8" alt="MRF" />
         </Link>
 
-        <GlobalSearch />
+        <div className="col-span-2 row-start-2 min-w-0 sm:flex-1 sm:max-w-xl"><GlobalSearch /></div>
 
-        <div className="ml-auto flex items-center gap-2 sm:gap-3">
+        <div className="col-start-2 row-start-1 ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
           <ModeToggle />
           <ThemeToggle />
         </div>
@@ -243,7 +247,7 @@ function GlobalSearch() {
 
   return (
     <div ref={wrapperRef} className="relative flex-1 min-w-0 max-w-xl">
-      <div className="group flex items-center gap-2.5 rounded-md border border-hairline bg-surface px-3 py-2 text-sm transition-colors focus-within:border-flame/60">
+      <div className="group flex items-center gap-2.5 rounded-md border border-hairline bg-search text-foreground px-3 py-2 text-sm transition-colors focus-within:border-flame/60">
         <Search className="size-4 shrink-0 text-muted-foreground" />
         <input
           value={q}

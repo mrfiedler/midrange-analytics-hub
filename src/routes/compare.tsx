@@ -12,6 +12,10 @@ import { getCurrentSeason } from "@/lib/season";
 export const Route = createFileRoute("/compare")({
   head: () => ({
     meta: [
+      { property: "og:title", content: "Comparador - Midrange Frenzy" },
+      { property: "og:description", content: "Compare jogadores da NBA lado a lado com estatísticas e radar." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Comparador - Midrange Frenzy" },
       { name: "description", content: "Compare 2 a 4 jogadores lado a lado com radar, barras e estatísticas detalhadas." },
     ],
@@ -56,12 +60,12 @@ function ComparePage() {
     }));
 
   return (
-    <div className="space-y-8 fade-up">
-      <div className="flex items-end justify-between flex-wrap gap-3">
-        <div>
+    <div className="min-w-0 space-y-8 fade-up">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-2 sm:items-end">
+        <div className="contents">
           <div className="eyebrow">2 a 4 jogadores</div>
-          <h1 className="font-display text-4xl md:text-5xl">Comparador</h1>
-          <p className="text-muted-foreground mt-2 max-w-xl">Adicione jogadores, veja radar sobreposto e barras comparativas para cada métrica.</p>
+          <h1 className="col-start-1 row-start-2 min-w-0 font-display text-4xl md:text-5xl">Comparador</h1>
+          <p className="col-span-2 row-start-3 min-w-0 text-muted-foreground max-w-xl text-sm sm:text-base leading-relaxed break-words">Adicione jogadores, veja radar sobreposto e barras comparativas para cada métrica.</p>
         </div>
         <button
           onClick={async () => {
@@ -78,9 +82,11 @@ function ComparePage() {
               /* user cancelled share */
             }
           }}
-          className="inline-flex items-center gap-1.5 text-xs font-display uppercase tracking-widest text-muted-foreground hover:text-foreground"
+          aria-label="Compartilhar comparação"
+          title="Compartilhar comparação"
+          className="col-start-2 row-start-2 inline-flex size-10 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-surface-2 hover:text-foreground"
         >
-          <Share2 className="size-3.5" /> Compartilhar
+          <Share2 className="size-4" />
         </button>
 
       </div>
@@ -152,9 +158,9 @@ function ComparePage() {
                   </div>
                   <div className="space-y-1.5">
                     {vals.map((v) => (
-                      <div key={v.name} className="flex items-center gap-3 text-xs">
-                        <span className="w-28 truncate text-muted-foreground">{v.name}</span>
-                        <div className="flex-1 h-2 rounded-full bg-surface-2 overflow-hidden">
+                      <div key={v.name} className="grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(0,1fr)_3.5rem] items-center gap-2 sm:gap-3 text-xs">
+                        <span className="min-w-0 truncate text-muted-foreground">{v.name}</span>
+                        <div className="min-w-0 h-2 rounded-full bg-surface-2 overflow-hidden">
                           <div className="h-full rounded-full transition-all" style={{ width: `${v.score}%`, background: v.color }} />
                         </div>
                         <span className="w-14 text-right tabular-nums">{ax.endsWith("%") ? `${(v.raw * 100).toFixed(1)}%` : v.raw.toFixed(1)}</span>
@@ -169,7 +175,7 @@ function ComparePage() {
       )}
 
       {slots.length === 0 && (
-        <div className="mrf-card p-10 text-center text-muted-foreground">
+        <div className="mrf-card min-w-0 p-5 sm:p-10 text-sm sm:text-base leading-relaxed text-center text-muted-foreground break-words">
           Adicione pelo menos 1 jogador pra começar a comparar.
         </div>
       )}
@@ -199,11 +205,11 @@ function Picker({ onPick, onClose }: { onPick: (id: number, name: string) => voi
   }, [q]);
 
   return (
-    <div className="fixed inset-0 z-50 bg-background/70 backdrop-blur grid place-items-start justify-center p-4 pt-20" onClick={onClose}>
-      <div className="mrf-card w-full max-w-lg p-4" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 bg-background/70 backdrop-blur flex items-start justify-center p-4 pt-20" onClick={onClose}>
+      <div className="mrf-card min-w-0 w-full max-w-lg p-4" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2 border-b border-hairline pb-3 mb-3">
           <Search className="size-4 text-muted-foreground" />
-          <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar jogador…" className="flex-1 bg-transparent outline-none" />
+          <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar jogador…" className="flex-1 min-w-0 bg-transparent outline-none text-base" />
           <button onClick={onClose} className="size-7 rounded-md hover:bg-surface-2 grid place-items-center text-muted-foreground"><X className="size-4" /></button>
         </div>
         <ul className="max-h-80 overflow-y-auto scrollbar-thin space-y-1">
