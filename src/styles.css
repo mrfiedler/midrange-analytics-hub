@@ -44,6 +44,7 @@
   --color-surface: var(--surface);      /* card surface */
   --color-surface-2: var(--surface-2);  /* elevated surface */
   --color-hairline: var(--hairline);    /* subtle border */
+  --color-search: var(--search);
   --color-header: var(--header);        /* top bar background */
 
   --color-chart-1: var(--chart-1);
@@ -133,6 +134,8 @@
 
   /* Chrome + logo + hero (por tema) */
   --header: var(--background);
+  --search: var(--surface);
+  --gradient-metric: linear-gradient(135deg, var(--surface-2), var(--surface));
   --logo-fg: oklch(0.98 0 0);
   --hero-fg: var(--foreground);
   --hero-muted: var(--muted-foreground);
@@ -188,6 +191,8 @@
   --sidebar-ring: var(--flame);
 
   --header: oklch(1 0 0);
+  --search: var(--surface);
+  --gradient-metric: linear-gradient(135deg, oklch(0.93 0.035 245), oklch(0.96 0.025 65) 60%, var(--surface));
   --logo-fg: oklch(0.25 0.06 252);
   --hero-fg: var(--foreground);
   --hero-muted: var(--muted-foreground);
@@ -252,6 +257,8 @@
   --sidebar-ring: var(--flame);
 
   --header: oklch(0.22 0.05 252);
+  --search: var(--surface-2);
+  --gradient-metric: linear-gradient(135deg, oklch(0.91 0.035 245), oklch(0.95 0.03 65) 60%, var(--surface));
   --logo-fg: oklch(0.97 0.01 85);
   --hero-fg: oklch(0.96 0.01 85);
   --hero-muted: oklch(0.78 0.04 260);
@@ -323,6 +330,10 @@
 
 @utility flame-bg {
   background: var(--gradient-flame);
+}
+
+@utility metric-panel {
+  background: var(--gradient-metric);
 }
 
 @utility court-bg {

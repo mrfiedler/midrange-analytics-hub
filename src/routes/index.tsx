@@ -10,6 +10,10 @@ import { findMetric } from "@/data/glossary";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
+      { property: "og:title", content: "Midrange Frenzy - Dashboard" },
+      { property: "og:description", content: "Jogos recentes, líderes da NBA e métricas de basquete em português." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Midrange Frenzy - Dashboard" },
       { name: "description", content: "Líderes do dia, jogos recentes e métrica do dia. A central de análise de basquete em português." },
     ],
@@ -17,7 +21,7 @@ export const Route = createFileRoute("/")({
   component: Dashboard,
 });
 function Dashboard() {
-  const metricOfDay = findMetric("TS%")!;
+  const metricOfDay = findMetric("TS%");
 
   return (
     <div className="space-y-8">
@@ -62,7 +66,7 @@ function Dashboard() {
         </div>
 
         {/* Metric of the day */}
-        <section>
+        {metricOfDay && <section className="min-w-0">
           <div className="mb-3">
             <div className="eyebrow">Aprenda em 30s</div>
             <h2 className="font-display text-2xl md:text-3xl">Métrica do dia</h2>
@@ -70,15 +74,14 @@ function Dashboard() {
           <motion.div
             initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="mrf-card relative p-5 overflow-hidden"
+            className="metric-panel relative rounded-2xl border border-hairline p-6 md:p-8 overflow-hidden"
           >
-            <div className="absolute inset-0 court-bg opacity-30 pointer-events-none" />
             <div className="relative">
               <div className="eyebrow text-amber"><MetricTooltip abbr={metricOfDay.abbr} /></div>
               <div className="mt-1 font-display text-2xl">{metricOfDay.name}</div>
               <p className="mt-3 text-sm text-foreground/90 leading-relaxed">{metricOfDay.newbie}</p>
               {metricOfDay.formula && (
-                <div className="mt-4 rounded-md bg-background/60 border border-hairline p-3 font-mono text-xs text-muted-foreground">
+                <div className="mt-4 rounded-md bg-background/40 border border-hairline p-3 font-mono text-xs text-muted-foreground break-words">
                   {metricOfDay.formula}
                 </div>
               )}
@@ -96,7 +99,7 @@ function Dashboard() {
               </Link>
             </div>
           </motion.div>
-        </section>
+        </section>}
       </div>
     </div>
   );

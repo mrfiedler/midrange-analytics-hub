@@ -10,3 +10,5 @@
 <!-- LOVABLE:END -->
 
 - Derive game leaders exclusively from the event box score through `game-leaders.ts`, never summary leader averages, because ESPN includes season leaders before tip-off.
+
+- Use sidebar semantic tokens for navigation chrome and independent search tokens for mixed themes; mobile headers place search on a full-width second row to preserve usable control widths.
