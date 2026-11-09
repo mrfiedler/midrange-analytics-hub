@@ -72,7 +72,7 @@ function PlayersSearch() {
       )}
 
       {q.trim().length >= 2 && isLoading && (
-        <ul className="grid gap-2 sm:grid-cols-2">
+        <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {Array.from({ length: 6 }).map((_, i) => (
             <li key={i} className="mrf-card p-3 flex items-center gap-3 animate-pulse">
               <div className="size-10 rounded-full bg-surface-2" />
@@ -92,9 +92,9 @@ function PlayersSearch() {
       )}
 
       {!isLoading && !showBrowse && (
-        <ul className="grid gap-2 sm:grid-cols-2">
+        <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {results.map((p) => (
-            <li key={p.id}>
+            <li key={p.id} className="min-w-0">
               <PlayerRow p={p as any} />
             </li>
           ))}
@@ -110,9 +110,9 @@ function PlayersSearch() {
             loading={trending.isLoading}
             error={!trending.data?.ok && trending.data?.error}
           >
-            <ul className="grid gap-2 sm:grid-cols-2">
+            <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {(trending.data?.players ?? []).map((p) => (
-                <li key={p.id}><PlayerRow p={p as any} subtitle={p.reason} /></li>
+                <li key={p.id} className="min-w-0"><PlayerRow p={p as any} subtitle={p.reason} /></li>
               ))}
               {trending.data?.ok && (trending.data.players?.length ?? 0) === 0 && (
                 <li className="mrf-card p-4 text-sm text-muted-foreground sm:col-span-2">Sem trending agora.</li>
@@ -147,7 +147,7 @@ function Section({
       </div>
       {error && <div className="mrf-card p-3 text-sm text-amber">Não foi possível carregar: {error}</div>}
       {loading ? (
-        <ul className="grid gap-2 sm:grid-cols-2">
+        <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {Array.from({ length: 4 }).map((_, i) => (
             <li key={i} className="mrf-card p-3 flex items-center gap-3 animate-pulse">
               <div className="size-10 rounded-full bg-surface-2" />
@@ -168,7 +168,7 @@ function PlayerRow({ p, subtitle }: { p: any; subtitle?: string }) {
     <Link
       to="/players/$id"
       params={{ id: String(p.id) }}
-      className="mrf-card mrf-card-hover flex items-center gap-3 p-3"
+      className="mrf-card mrf-card-hover flex min-w-0 items-center gap-3 p-3"
     >
       <PlayerAvatar id={p.id} firstName={p.firstName} lastName={p.lastName} />
       <div className="min-w-0 flex-1">
